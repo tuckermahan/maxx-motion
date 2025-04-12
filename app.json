@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "fitness-challenge-app",
-    "slug": "fitness-challenge-app",
+    "name": "maxx-motion",
+    "slug": "maxx-motion",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "maxx-motion",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
