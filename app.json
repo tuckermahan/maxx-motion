@@ -9,13 +9,15 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.maxxpotential.maxxmotion"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.maxxpotential.maxxmotion"
     },
     "web": {
       "bundler": "metro",
@@ -36,6 +38,7 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "scheme": "maxx-motion"
   }
 }
