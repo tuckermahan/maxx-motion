@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView, ImageBackground, Text } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
@@ -218,24 +219,27 @@ export default function LeaderboardScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>MAXX Motion</Text>
-        <View style={styles.userIcon}>
-          <Text style={styles.userIconText}>U</Text>
-        </View>
-      </View>
-
       <ImageBackground
         source={require('@/assets/images/gym-equipment.png')}
         style={styles.headerBackground}
         resizeMode="cover"
       >
-        <View style={styles.headerOverlay}>
+        <LinearGradient
+          colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
+          locations={[0, 0.5]}
+          style={styles.headerOverlay}
+        >
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>MAXX Motion</Text>
+            <View style={styles.userIcon}>
+              <Text style={styles.userIconText}>U</Text>
+            </View>
+          </View>
           <View style={styles.headerContent}>
             <Text style={styles.pageTitle}>Leaderboard</Text>
             <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
           </View>
-        </View>
+        </LinearGradient>
       </ImageBackground>
 
       <View style={styles.tabs}>
@@ -451,12 +455,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  headerBackground: {
+    height: 300,
+  },
+  headerOverlay: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: '#C41E3A',
     zIndex: 1,
   },
   headerTitle: {
@@ -476,13 +485,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#C41E3A',
-  },
-  headerBackground: {
-    height: 300,
-  },
-  headerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   headerContent: {
     flex: 1,
@@ -632,8 +634,17 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   userTeamItem: {
     backgroundColor: '#FFF5F5',
@@ -823,8 +834,17 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   currentUserItem: {
     backgroundColor: '#FFF5F5',
@@ -873,7 +893,7 @@ const styles = StyleSheet.create({
   },
   memberMinutes: {
     fontSize: 16,
-    color: '#666666',
+    color: '#C41E3A',
     fontWeight: '600',
   },
   nextRankInfo: {
