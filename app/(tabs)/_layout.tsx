@@ -9,30 +9,30 @@ import { router } from 'expo-router';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  
+
   // Additional auth check specific to the tabs section
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
-        
+
         if (error || !data.session) {
           // Not authenticated, redirect to login
           console.log('Tabs: Not authenticated, redirecting to login');
           router.replace('/login');
           return;
         }
-        
+
         setIsAuthenticated(true);
       } catch (err) {
         console.error('Tabs auth check error:', err);
         router.replace('/login');
       }
     };
-    
+
     checkAuth();
   }, []);
-  
+
   // Show loading indicator until auth check completes
   if (isAuthenticated === null) {
     return (
@@ -42,7 +42,7 @@ export default function TabLayout() {
       </View>
     );
   }
-  
+
   return (
     <Tabs
       screenOptions={{
@@ -85,6 +85,7 @@ export default function TabLayout() {
         options={{
           title: 'Leaderboard',
           tabBarIcon: ({ color }) => <IconSymbol name="list.number" color={color} />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
