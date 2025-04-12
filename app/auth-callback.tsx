@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '../lib/supabase';
+import { handleAuthRouting } from '../lib/services/auth';
 
 export default function AuthCallbackScreen() {
   const params = useLocalSearchParams();
@@ -22,8 +23,13 @@ export default function AuthCallbackScreen() {
         }
 
         if (data.session) {
-          console.log('User is authenticated, redirecting to home');
-          router.replace('/');
+          console.log('User is authenticated, checking routing');
+          console.log('User ID:', data.session.user.id);
+          console.log('User email:', data.session.user.email);
+          console.log('User metadata:', JSON.stringify(data.session.user.user_metadata));
+          
+          // Call auth routing which will create profile if needed
+          await handleAuthRouting();
         } else {
           console.log('No session found, redirecting to login');
           router.replace('/login');

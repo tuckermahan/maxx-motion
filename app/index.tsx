@@ -1,7 +1,42 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, Text, View, Pressable, ActivityIndicator } from 'react-native';
 import { Link } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { handleAuthRouting } from '../lib/services/auth';
 
 export default function Home() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check auth status and redirect if needed
+    const checkAuth = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (data.session) {
+          // User is logged in, route them accordingly
+          await handleAuthRouting();
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        setLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0a7ea4" />
+        <Text style={styles.subtitle}>Checking login status...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>MAXX Motion</Text>
