@@ -1,3 +1,4 @@
+import React from 'react';
 import { StyleSheet } from 'react-native';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -5,35 +6,32 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
-export default function DashboardScreen() {
+export default function ProfileScreen() {
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+      headerBackgroundColor={{ light: '#E6E6FA', dark: '#2E2E3F' }}
       headerImage={
         <IconSymbol
           size={310}
           color="#808080"
-          name="house.fill"
+          name="person.fill"
           style={styles.headerImage}
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Dashboard</ThemedText>
+        <ThemedText type="title">Profile</ThemedText>
       </ThemedView>
-      
       <ThemedView style={styles.section}>
-        <ThemedText type="subtitle">Your Activity</ThemedText>
-        {/* Recent activity summary will be implemented here */}
+        <ThemedText type="subtitle">Activity History</ThemedText>
+        {/* Activity history interface will be implemented here */}
       </ThemedView>
-      
       <ThemedView style={styles.section}>
-        <ThemedText type="subtitle">Your Team</ThemedText>
-        {/* Team summary will be implemented here */}
+        <ThemedText type="subtitle">Edit Activity</ThemedText>
+        {/* Edit activity interface will be implemented here */}
       </ThemedView>
-      
       <ThemedView style={styles.section}>
-        <ThemedText type="subtitle">Recent Achievements</ThemedText>
-        {/* Recent achievements will be implemented here */}
+        <ThemedText type="subtitle">Event/Team History</ThemedText>
+        {/* Event and team history interface will be implemented here */}
       </ThemedView>
     </ParallaxScrollView>
   );
@@ -50,4 +48,4 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 20,
   },
-});
+}); 

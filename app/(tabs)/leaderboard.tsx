@@ -1,3 +1,4 @@
+import React from 'react';
 import { StyleSheet } from 'react-native';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -5,35 +6,32 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
-export default function DashboardScreen() {
+export default function LeaderboardScreen() {
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+      headerBackgroundColor={{ light: '#FFD580', dark: '#664B14' }}
       headerImage={
         <IconSymbol
           size={310}
           color="#808080"
-          name="house.fill"
+          name="trophy.fill"
           style={styles.headerImage}
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Dashboard</ThemedText>
+        <ThemedText type="title">Leaderboard</ThemedText>
       </ThemedView>
-      
       <ThemedView style={styles.section}>
-        <ThemedText type="subtitle">Your Activity</ThemedText>
-        {/* Recent activity summary will be implemented here */}
+        <ThemedText type="subtitle">Team Rankings</ThemedText>
+        {/* Team rankings interface will be implemented here */}
       </ThemedView>
-      
       <ThemedView style={styles.section}>
-        <ThemedText type="subtitle">Your Team</ThemedText>
-        {/* Team summary will be implemented here */}
+        <ThemedText type="subtitle">User Rankings</ThemedText>
+        {/* User rankings interface will be implemented here */}
       </ThemedView>
-      
       <ThemedView style={styles.section}>
-        <ThemedText type="subtitle">Recent Achievements</ThemedText>
-        {/* Recent achievements will be implemented here */}
+        <ThemedText type="subtitle">Team Statistics</ThemedText>
+        {/* Team statistics interface will be implemented here */}
       </ThemedView>
     </ParallaxScrollView>
   );
@@ -50,4 +48,4 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 20,
   },
-});
+}); 
