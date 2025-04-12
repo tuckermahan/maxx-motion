@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, ImageBackground, Modal, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, ImageBackground, Modal, TouchableOpacity, Pressable, StyleSheet, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Card } from '@/components/ui/card';
@@ -69,6 +69,39 @@ export default function Activity() {
     } catch (error) {
       console.error('Error:', error);
       // TODO: Add error feedback
+    }
+  };
+
+  // Add a platform-specific date picker component
+  // This is a simplified example - you'd need to implement the actual date picker
+  const DateInput = () => {
+    if (Platform.OS === 'web') {
+      return (
+        <TextInput
+          style={styles.input}
+          placeholder="YYYY-MM-DD"
+          value={manualEntry.activity_date.toISOString().split('T')[0]}
+          onChange={(e) => {
+            const dateStr = e.nativeEvent.text;
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+              setManualEntry({
+                ...manualEntry, 
+                activity_date: date
+              });
+            }
+          }}
+        />
+      );
+    } else {
+      // Use DateTimePicker from @react-native-community/datetimepicker for mobile
+      return (
+        <Button
+          label={manualEntry.activity_date.toLocaleDateString()}
+          onPress={() => {/* Show native date picker */}}
+          variant="secondary"
+        />
+      );
     }
   };
 
@@ -165,14 +198,20 @@ export default function Activity() {
             <View style={styles.modalContent}>
               <ThemedText style={styles.modalTitle}>Choose Tracker</ThemedText>
               {trackerOptions.map((tracker) => (
-                <TouchableOpacity
+                <Pressable
                   key={tracker.id}
-                  style={styles.trackerOption}
+                  style={({ pressed }) => [
+                    styles.trackerOption,
+                    pressed && styles.trackerOptionPressed
+                  ]}
                   onPress={() => handleTrackerSelection(tracker.id)}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Connect to ${tracker.name}`}
                 >
                   <Text style={styles.trackerIcon}>{tracker.icon}</Text>
                   <Text style={styles.trackerName}>{tracker.name}</Text>
-                </TouchableOpacity>
+                </Pressable>
               ))}
               <Button
                 label="Cancel"
@@ -206,6 +245,7 @@ export default function Activity() {
                 value={manualEntry.activity_minutes}
                 onChangeText={(text) => setManualEntry({...manualEntry, activity_minutes: text})}
               />
+              <DateInput />
               <View style={styles.buttonContainer}>
                 <Button
                   label="Submit"
@@ -238,8 +278,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 20,
-    width: '90%',
+    width: Platform.OS === 'web' ? '50%' : '90%',
     maxWidth: 400,
+    minWidth: Platform.OS === 'web' ? 320 : 'auto',
   },
   modalTitle: {
     fontSize: 24,
@@ -253,6 +294,11 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    borderRadius: 8,
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {})
+  },
+  trackerOptionPressed: {
+    backgroundColor: '#f0f0f0',
   },
   trackerIcon: {
     fontSize: 24,
