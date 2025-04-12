@@ -73,31 +73,32 @@ interface TeamMember {
 
 const TeamMemberItem = ({ member, nextRankMinutes }: { member: TeamMember; nextRankMinutes?: number }) => (
   <View style={[styles.memberItem, member.isCurrentUser && styles.currentUserItem]}>
-    <View style={[styles.memberRankContainer, member.isCurrentUser && styles.currentUserRank]}>
-      <ThemedText style={[styles.memberRankText, member.isCurrentUser && styles.currentUserRankText]}>
+    <View style={styles.memberRankContainer}>
+      <Text style={[styles.memberRankText, member.isCurrentUser && styles.currentUserRankText]}>
         {member.rank}
-      </ThemedText>
+      </Text>
     </View>
     <View style={styles.memberInfo}>
       <View style={styles.memberNameContainer}>
-        <ThemedText style={[styles.memberName, member.isCurrentUser && styles.currentUserText]}>
+        <Text style={[styles.memberName, member.isCurrentUser && styles.currentUserText]}>
           {member.name}
-        </ThemedText>
-        {member.isCurrentUser && <ThemedText style={styles.youBadge}>(You)</ThemedText>}
+        </Text>
+        {member.isCurrentUser && <Text style={styles.youBadge}>(You)</Text>}
       </View>
-      <View style={styles.memberStats}>
-        <ThemedText style={styles.memberMinutes}>{member.totalMinutes} mins</ThemedText>
-        {member.isCurrentUser && nextRankMinutes && (
-          <ThemedText style={styles.nextRankInfo}>
-            {nextRankMinutes} mins to next rank
-          </ThemedText>
-        )}
-      </View>
+      <Text style={styles.memberMinutes}>{member.totalMinutes} mins</Text>
     </View>
+    {member.isCurrentUser && nextRankMinutes && (
+      <Text style={styles.nextRankInfo}>
+        {nextRankMinutes} mins to next rank
+      </Text>
+    )}
   </View>
 );
 
 export default function LeaderboardScreen() {
+  const [showAllTeams, setShowAllTeams] = useState(false);
+  const [showAllMembers, setShowAllMembers] = useState(false);
+
   const teams: Team[] = [
     {
       id: 'fw1',
@@ -109,21 +110,21 @@ export default function LeaderboardScreen() {
       isUserTeam: false
     },
     {
-      id: 'mm2',
+      id: 'hh2',
       rank: 2,
-      name: "Move Masters",
-      members: 12,
-      totalMinutes: 2640,
-      minutesPerMember: 220,
-      isUserTeam: true
-    },
-    {
-      id: 'hh3',
-      rank: 3,
       name: "Health Heroes",
       members: 18,
       totalMinutes: 3240,
       minutesPerMember: 180,
+      isUserTeam: false
+    },
+    {
+      id: 'mm3',
+      rank: 3,
+      name: "Move Masters",
+      members: 12,
+      totalMinutes: 2640,
+      minutesPerMember: 220,
       isUserTeam: false
     },
     {
@@ -133,6 +134,42 @@ export default function LeaderboardScreen() {
       members: 10,
       totalMinutes: 1650,
       minutesPerMember: 165,
+      isUserTeam: true
+    },
+    {
+      id: 'fd5',
+      rank: 5,
+      name: "Fit Defenders",
+      members: 10,
+      totalMinutes: 1320,
+      minutesPerMember: 132,
+      isUserTeam: false
+    },
+    {
+      id: 'ts6',
+      rank: 6,
+      name: "Team Stamina",
+      members: 10,
+      totalMinutes: 1150,
+      minutesPerMember: 115,
+      isUserTeam: false
+    },
+    {
+      id: 'sm7',
+      rank: 7,
+      name: "Strength Monarchs",
+      members: 10,
+      totalMinutes: 980,
+      minutesPerMember: 98,
+      isUserTeam: false
+    },
+    {
+      id: 'el8',
+      rank: 8,
+      name: "Endurance League",
+      members: 10,
+      totalMinutes: 860,
+      minutesPerMember: 86,
       isUserTeam: false
     }
   ];
@@ -141,20 +178,8 @@ export default function LeaderboardScreen() {
     { id: '1', name: 'Sarah Jay', totalMinutes: 460, rank: 1, isCurrentUser: false },
     { id: '2', name: 'Jessica John', totalMinutes: 240, rank: 2, isCurrentUser: true },
     { id: '3', name: 'Lina Smith', totalMinutes: 180, rank: 3, isCurrentUser: false },
-    {
-      id: '4',
-      name: 'Sarah Wilson',
-      totalMinutes: 280,
-      rank: 4,
-      isCurrentUser: false
-    },
-    {
-      id: '5',
-      name: 'Alex Brown',
-      totalMinutes: 260,
-      rank: 5,
-      isCurrentUser: false
-    }
+    { id: '4', name: 'Sarah Wilson', totalMinutes: 280, rank: 4, isCurrentUser: false },
+    { id: '5', name: 'Alex Brown', totalMinutes: 260, rank: 5, isCurrentUser: false }
   ];
 
   const [selectedTeamId, setSelectedTeamId] = useState<string>(teams.find(t => t.isUserTeam)?.id || teams[0].id);
@@ -259,7 +284,41 @@ export default function LeaderboardScreen() {
 
       {activeTab === 'team' ? (
         <ScrollView style={styles.content}>
-          {teams.map((team) => (
+          <View style={styles.podiumContainer}>
+            <View style={styles.podiumRow}>
+              {/* Silver - 2nd Place */}
+              <View style={[styles.podiumItem, styles.secondPlace]}>
+                <View style={[styles.teamAvatar, styles.silverTeam]}>
+                  <Text style={styles.teamAvatarText}>HH</Text>
+                </View>
+                <Text style={styles.podiumTeamName}>Health Heroes</Text>
+                <Text style={styles.podiumMinutes}>3,240 min</Text>
+                <Text style={styles.podiumRank}>🥈</Text>
+              </View>
+
+              {/* Gold - 1st Place */}
+              <View style={[styles.podiumItem, styles.firstPlace]}>
+                <View style={[styles.teamAvatar, styles.goldTeam]}>
+                  <Text style={styles.teamAvatarText}>FW</Text>
+                </View>
+                <Text style={styles.podiumTeamName}>Fitness Warriors</Text>
+                <Text style={styles.podiumMinutes}>3,450 min</Text>
+                <Text style={styles.podiumRank}>🥇</Text>
+              </View>
+
+              {/* Bronze - 3rd Place */}
+              <View style={[styles.podiumItem, styles.thirdPlace]}>
+                <View style={[styles.teamAvatar, styles.bronzeTeam]}>
+                  <Text style={styles.teamAvatarText}>MM</Text>
+                </View>
+                <Text style={styles.podiumTeamName}>Move Masters</Text>
+                <Text style={styles.podiumMinutes}>2,640 min</Text>
+                <Text style={styles.podiumRank}>🥉</Text>
+              </View>
+            </View>
+          </View>
+
+          {teams.slice(3, showAllTeams ? undefined : 8).map((team) => (
             <TeamRankingItem
               key={team.rank}
               rank={team.rank}
@@ -270,41 +329,105 @@ export default function LeaderboardScreen() {
               isUserTeam={team.isUserTeam}
             />
           ))}
-          {userTeam && userTeam.rank > 1 && (
-            <View style={styles.competitionInfoContainer}>
-              <ThemedText style={styles.competitionLabel}>Minutes to catch up:</ThemedText>
-              <View style={styles.minutesGapContainer}>
-                <ThemedText style={styles.minutesGapNumber}>{minutesAhead}</ThemedText>
-                <ThemedText style={styles.minutesGapLabel}>minutes</ThemedText>
-              </View>
-              <ThemedText style={styles.competitionTarget}>
-                to pass {teams[userTeam.rank - 2].name} for {getOrdinal(userTeam.rank - 1)} place
-              </ThemedText>
-            </View>
+          {teams.length > 8 && (
+            <TouchableOpacity
+              style={styles.viewMoreButton}
+              onPress={() => setShowAllTeams(!showAllTeams)}
+            >
+              <Text style={styles.viewMoreText}>
+                {showAllTeams ? 'SHOW LESS TEAMS' : 'VIEW MORE TEAMS'}
+              </Text>
+            </TouchableOpacity>
           )}
-          {userTeam && userTeam.rank < teams.length && (
-            <View style={styles.defendingContainer}>
-              <View style={styles.defendingContent}>
-                <ThemedText style={styles.defendingTitle}>
-                  Defending {getOrdinal(userTeam.rank)} place
-                </ThemedText>
-                <View style={styles.defendingGapContainer}>
-                  <ThemedText style={styles.defendingGapNumber}>{minutesBehind}</ThemedText>
-                  <ThemedText style={styles.defendingGapLabel}>minutes ahead</ThemedText>
-                </View>
-                <ThemedText style={styles.defendingTarget}>
-                  of {teams[userTeam.rank].name}
-                </ThemedText>
-              </View>
-            </View>
-          )}
-          <TouchableOpacity style={styles.viewMoreButton}>
-            <Text style={styles.viewMoreText}>VIEW MORE TEAMS</Text>
-          </TouchableOpacity>
         </ScrollView>
       ) : (
         <ScrollView style={styles.content}>
-          {teamMembers.map((member) => (
+          <View style={styles.podiumContainer}>
+            <View style={styles.podiumRow}>
+              {/* Silver - 2nd Place */}
+              <View style={[
+                styles.podiumItem,
+                styles.secondPlace,
+                teamMembers[1].isCurrentUser && styles.currentUserPodiumItem
+              ]}>
+                <View style={[styles.userAvatar, styles.silverUser]}>
+                  <Text style={styles.userAvatarText}>JJ</Text>
+                </View>
+                <View style={styles.podiumNameContainer}>
+                  <Text style={[
+                    styles.podiumUserName,
+                    teamMembers[1].isCurrentUser && styles.currentUserText
+                  ]}>
+                    {teamMembers[1].name}
+                  </Text>
+                  {teamMembers[1].isCurrentUser && (
+                    <Text style={styles.youBadge}>(You)</Text>
+                  )}
+                </View>
+                <Text style={styles.podiumMinutes}>{teamMembers[1].totalMinutes} min</Text>
+                <Text style={[
+                  styles.podiumRank,
+                  teamMembers[1].isCurrentUser && styles.currentUserText
+                ]}>🥈</Text>
+              </View>
+
+              {/* Gold - 1st Place */}
+              <View style={[
+                styles.podiumItem,
+                styles.firstPlace,
+                teamMembers[0].isCurrentUser && styles.currentUserPodiumItem
+              ]}>
+                <View style={[styles.userAvatar, styles.goldUser]}>
+                  <Text style={styles.userAvatarText}>SJ</Text>
+                </View>
+                <View style={styles.podiumNameContainer}>
+                  <Text style={[
+                    styles.podiumUserName,
+                    teamMembers[0].isCurrentUser && styles.currentUserText
+                  ]}>
+                    {teamMembers[0].name}
+                  </Text>
+                  {teamMembers[0].isCurrentUser && (
+                    <Text style={styles.youBadge}>(You)</Text>
+                  )}
+                </View>
+                <Text style={styles.podiumMinutes}>{teamMembers[0].totalMinutes} min</Text>
+                <Text style={[
+                  styles.podiumRank,
+                  teamMembers[0].isCurrentUser && styles.currentUserText
+                ]}>🥇</Text>
+              </View>
+
+              {/* Bronze - 3rd Place */}
+              <View style={[
+                styles.podiumItem,
+                styles.thirdPlace,
+                teamMembers[2].isCurrentUser && styles.currentUserPodiumItem
+              ]}>
+                <View style={[styles.userAvatar, styles.bronzeUser]}>
+                  <Text style={styles.userAvatarText}>LS</Text>
+                </View>
+                <View style={styles.podiumNameContainer}>
+                  <Text style={[
+                    styles.podiumUserName,
+                    teamMembers[2].isCurrentUser && styles.currentUserText
+                  ]}>
+                    {teamMembers[2].name}
+                  </Text>
+                  {teamMembers[2].isCurrentUser && (
+                    <Text style={styles.youBadge}>(You)</Text>
+                  )}
+                </View>
+                <Text style={styles.podiumMinutes}>{teamMembers[2].totalMinutes} min</Text>
+                <Text style={[
+                  styles.podiumRank,
+                  teamMembers[2].isCurrentUser && styles.currentUserText
+                ]}>🥉</Text>
+              </View>
+            </View>
+          </View>
+
+          {teamMembers.filter(member => !member.isCurrentUser && member.rank > 3).map((member) => (
             <TeamMemberItem
               key={member.id}
               member={member}
@@ -313,29 +436,6 @@ export default function LeaderboardScreen() {
           ))}
         </ScrollView>
       )}
-
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.navIcon} />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.navIcon} />
-          <Text style={styles.navText}>Activities</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.navIcon} />
-          <Text style={styles.navText}>Teams</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.navIcon} />
-          <Text style={styles.navText}>Rewards</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.navIcon} />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -425,16 +525,19 @@ const styles = StyleSheet.create({
     color: '#2196F3',
   },
   challengeCard: {
-    margin: 16,
-    padding: 16,
+    marginLeft: 16,
+    marginVertical: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     backgroundColor: '#F3E5F5',
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    alignSelf: 'flex-start',
   },
   challengeInfo: {
-    flex: 1,
+    marginRight: 8,
   },
   challengeTitle: {
     fontSize: 16,
@@ -527,17 +630,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#EEEEEE',
   },
   userTeamItem: {
     backgroundColor: '#FFF5F5',
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
-    borderBottomColor: '#FFEBEB',
-    borderBottomWidth: 1,
-    borderTopColor: '#FFEBEB',
-    borderTopWidth: 1,
   },
   rankContainer: {
     width: 40,
@@ -550,11 +649,6 @@ const styles = StyleSheet.create({
   },
   userTeamRank: {
     backgroundColor: '#C41E3A',
-    shadowColor: '#C41E3A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
   },
   rankText: {
     color: '#666666',
@@ -563,6 +657,7 @@ const styles = StyleSheet.create({
   },
   userTeamRankText: {
     color: 'white',
+    fontWeight: '700',
   },
   teamInfo: {
     flex: 1,
@@ -580,11 +675,12 @@ const styles = StyleSheet.create({
   },
   userTeamText: {
     color: '#C41E3A',
+    fontWeight: '700',
   },
   yourTeamBadge: {
     fontSize: 13,
     color: '#C41E3A',
-    fontWeight: '500',
+    fontWeight: '600',
     backgroundColor: '#FFEBEB',
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -725,34 +821,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#EEEEEE',
   },
   currentUserItem: {
     backgroundColor: '#FFF5F5',
-    marginHorizontal: -20,
-    paddingHorizontal: 20,
-    borderBottomColor: '#FFEBEB',
-    borderBottomWidth: 1,
-    borderTopColor: '#FFEBEB',
-    borderTopWidth: 1,
   },
   memberRankContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
-  },
-  currentUserRank: {
-    backgroundColor: '#C41E3A',
-    shadowColor: '#C41E3A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    marginRight: 12,
   },
   memberRankText: {
     color: '#666666',
@@ -760,7 +844,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   currentUserRankText: {
-    color: 'white',
+    color: '#C41E3A',
   },
   memberInfo: {
     flex: 1,
@@ -768,11 +852,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  memberNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   memberName: {
     fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: -0.3,
     color: '#000000',
+    fontWeight: '500',
   },
   currentUserText: {
     color: '#C41E3A',
@@ -782,23 +869,127 @@ const styles = StyleSheet.create({
     color: '#C41E3A',
     fontSize: 14,
     marginLeft: 4,
+    fontWeight: '500',
   },
   memberMinutes: {
     fontSize: 16,
-    fontWeight: '600',
     color: '#666666',
-  },
-  memberStats: {
-    alignItems: 'flex-end',
+    fontWeight: '600',
   },
   nextRankInfo: {
     fontSize: 12,
     color: '#C41E3A',
     marginTop: 4,
     fontWeight: '500',
+    position: 'absolute',
+    bottom: 2,
+    right: 16,
   },
-  memberNameContainer: {
+  podiumContainer: {
+    padding: 16,
+    backgroundColor: '#fff',
+  },
+  podiumRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    gap: 8,
+    marginBottom: 16,
+  },
+  podiumItem: {
+    alignItems: 'center',
+    width: '30%',
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+  },
+  firstPlace: {
+    height: 180,
+    justifyContent: 'center',
+  },
+  secondPlace: {
+    height: 160,
+    justifyContent: 'center',
+  },
+  thirdPlace: {
+    height: 140,
+    justifyContent: 'center',
+  },
+  teamAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  goldTeam: {
+    backgroundColor: '#FFD700',
+  },
+  silverTeam: {
+    backgroundColor: '#2196F3',
+  },
+  bronzeTeam: {
+    backgroundColor: '#BF360C',
+  },
+  teamAvatarText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  podiumTeamName: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  podiumMinutes: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  podiumRank: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+  },
+  userAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  goldUser: {
+    backgroundColor: '#FFD700',
+  },
+  silverUser: {
+    backgroundColor: '#2196F3',
+  },
+  bronzeUser: {
+    backgroundColor: '#BF360C',
+  },
+  userAvatarText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  podiumUserName: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  currentUserPodiumItem: {
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1,
+    borderColor: '#FFEBEB',
+  },
+  podiumNameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
   },
 }); 
