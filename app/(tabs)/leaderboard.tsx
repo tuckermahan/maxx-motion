@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, ImageBackground } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, ImageBackground, Text } from 'react-native';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
@@ -189,28 +189,76 @@ export default function LeaderboardScreen() {
     ? nextRankMember.totalMinutes - currentUser.totalMinutes
     : undefined;
 
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: 'transparent', dark: 'transparent' }}
-      headerImage={
-        <ImageBackground
-          source={require('../assets/images/gym-equipment.png')}
-          style={styles.headerBackground}
-          resizeMode="cover"
-          imageStyle={{ opacity: 0.9 }}
-        >
-          <View style={styles.headerContent}>
-            <ThemedText style={styles.headerTitle}>MAXX Motion</ThemedText>
-            <ThemedText style={styles.headerSubtitle}>Track your motion. Reach your potential.</ThemedText>
-          </View>
-        </ImageBackground>
-      }>
-      <ThemedView style={styles.content}>
-        {/* Global Rankings Section */}
-        <ThemedView style={styles.section}>
-          <ThemedText style={styles.mainTitle}>Team Leaderboard</ThemedText>
-          <ThemedText style={styles.subtitle}>Total Activity Minutes</ThemedText>
+  const [activeTab, setActiveTab] = useState<'team' | 'user'>('team');
 
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>MAXX Motion</Text>
+        <View style={styles.userIcon}>
+          <Text style={styles.userIconText}>U</Text>
+        </View>
+      </View>
+
+      <ImageBackground
+        source={require('@/assets/images/gym-equipment.png')}
+        style={styles.headerBackground}
+        resizeMode="cover"
+      >
+        <View style={styles.headerOverlay}>
+          <View style={styles.headerContent}>
+            <Text style={styles.pageTitle}>Leaderboard</Text>
+            <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
+          </View>
+        </View>
+      </ImageBackground>
+
+      <View style={styles.tabs}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'team' && styles.activeTab]}
+          onPress={() => setActiveTab('team')}
+        >
+          <Text style={[styles.tabText, activeTab === 'team' && styles.activeTabText]}>
+            TEAM RANKINGS
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'user' && styles.activeTab]}
+          onPress={() => setActiveTab('user')}
+        >
+          <Text style={[styles.tabText, activeTab === 'user' && styles.activeTabText]}>
+            USER RANKINGS
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.challengeCard}>
+        <View style={styles.challengeInfo}>
+          <Text style={styles.challengeTitle}>April Fitness Challenge</Text>
+          <Text style={styles.challengeDates}>Apr 1 - Apr 30 • 24 days remaining</Text>
+        </View>
+        <View style={styles.activeTag}>
+          <Text style={styles.activeTagText}>ACTIVE</Text>
+        </View>
+      </View>
+
+      <View style={styles.filterRow}>
+        <TouchableOpacity style={styles.filterButton}>
+          <Text style={styles.filterButtonText}>Filter</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.filterButton, styles.activeFilter]}>
+          <Text style={[styles.filterButtonText, styles.activeFilterText]}>This Week</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.filterButton}>
+          <Text style={styles.filterButtonText}>By Minutes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.refreshButton}>
+          <Text style={styles.refreshButtonText}>REFRESH</Text>
+        </TouchableOpacity>
+      </View>
+
+      {activeTab === 'team' ? (
+        <ScrollView style={styles.content}>
           {teams.map((team) => (
             <TeamRankingItem
               key={team.rank}
@@ -222,7 +270,6 @@ export default function LeaderboardScreen() {
               isUserTeam={team.isUserTeam}
             />
           ))}
-
           {userTeam && userTeam.rank > 1 && (
             <View style={styles.competitionInfoContainer}>
               <ThemedText style={styles.competitionLabel}>Minutes to catch up:</ThemedText>
@@ -251,13 +298,12 @@ export default function LeaderboardScreen() {
               </View>
             </View>
           )}
-        </ThemedView>
-
-        {/* Team Member Rankings Section */}
-        <ThemedView style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>Move Masters Rankings</ThemedText>
-          <ThemedText style={styles.subtitle}>Individual Contributions</ThemedText>
-
+          <TouchableOpacity style={styles.viewMoreButton}>
+            <Text style={styles.viewMoreText}>VIEW MORE TEAMS</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      ) : (
+        <ScrollView style={styles.content}>
           {teamMembers.map((member) => (
             <TeamMemberItem
               key={member.id}
@@ -265,9 +311,32 @@ export default function LeaderboardScreen() {
               nextRankMinutes={member.isCurrentUser ? minutesToNextRank : undefined}
             />
           ))}
-        </ThemedView>
-      </ThemedView>
-    </ParallaxScrollView>
+        </ScrollView>
+      )}
+
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navItem}>
+          <View style={styles.navIcon} />
+          <Text style={styles.navText}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <View style={styles.navIcon} />
+          <Text style={styles.navText}>Activities</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <View style={styles.navIcon} />
+          <Text style={styles.navText}>Teams</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <View style={styles.navIcon} />
+          <Text style={styles.navText}>Rewards</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <View style={styles.navIcon} />
+          <Text style={styles.navText}>Profile</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
@@ -278,40 +347,181 @@ function getOrdinal(n: number): string {
 }
 
 const styles = StyleSheet.create({
-  content: {
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 16,
-    gap: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#C41E3A',
+    zIndex: 1,
   },
-  section: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  mainTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 4,
-    letterSpacing: -0.5,
-    color: '#000000',
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#666666',
-    marginBottom: 24,
-    letterSpacing: -0.3,
-  },
-  sectionTitle: {
+  headerTitle: {
+    color: '#fff',
     fontSize: 20,
     fontWeight: '600',
+  },
+  userIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userIconText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#C41E3A',
+  },
+  headerBackground: {
+    height: 300,
+  },
+  headerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+  headerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  pageTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#fff',
+    textAlign: 'center',
     marginBottom: 8,
-    letterSpacing: -0.5,
-    color: '#000000',
+  },
+  tagline: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+  },
+  tabs: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#2196F3',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#757575',
+  },
+  activeTabText: {
+    color: '#2196F3',
+  },
+  challengeCard: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: '#F3E5F5',
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  challengeInfo: {
+    flex: 1,
+  },
+  challengeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#9C27B0',
+  },
+  challengeDates: {
+    fontSize: 14,
+    color: '#9C27B0',
+    opacity: 0.8,
+  },
+  activeTag: {
+    backgroundColor: '#9C27B0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  activeTagText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 8,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+  },
+  activeFilter: {
+    backgroundColor: '#E3F2FD',
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: '#757575',
+  },
+  activeFilterText: {
+    color: '#2196F3',
+  },
+  refreshButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#2196F3',
+    marginLeft: 'auto',
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  content: {
+    flex: 1,
+  },
+  viewMoreButton: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  viewMoreText: {
+    color: '#2196F3',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    paddingVertical: 8,
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  navIcon: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  navText: {
+    fontSize: 12,
+    color: '#757575',
   },
   teamItem: {
     flexDirection: 'row',
@@ -481,28 +691,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
     letterSpacing: -0.2,
-  },
-  headerBackground: {
-    height: 300,
-    width: '100%',
-    backgroundColor: '#000000',
-  },
-  headerContent: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: 'white',
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '400',
   },
   activityItem: {
     flexDirection: 'row',
