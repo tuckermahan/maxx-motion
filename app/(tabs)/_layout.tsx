@@ -5,6 +5,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
+import { FontAwesome5 } from '@expo/vector-icons';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -50,13 +51,25 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colorScheme === 'dark' ? '#888888' : '#888888',
         tabBarStyle: {
           height: 60,
+          borderTopWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+          backgroundColor: colorScheme === 'dark' ? '#121212' : '#ffffff',
         },
+        tabBarIcon: () => null,
         tabBarIconStyle: {
-          marginBottom: 0,
+          display: 'none',
         },
         tabBarLabelStyle: {
           fontSize: 15,
           fontWeight: '500',
+        },
+        tabBarShowLabel: true,
+        tabBarActiveBackgroundColor: 'transparent',
+        tabBarInactiveBackgroundColor: 'transparent',
+        tabBarItemStyle: {
+          height: 60,
+          padding: 0,
         },
       }}>
       <Tabs.Screen
@@ -80,15 +93,12 @@ export default function TabLayout() {
         options={{
           title: 'Team',
           headerShown: false,
-          tabBarIcon: ({ color }) => <IconSymbol name="person.3.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="leaderboard"
         options={{
           title: 'Leaderboard',
-          tabBarIcon: ({ color }) => <IconSymbol name="list.number" color={color} />,
-          headerShown: false,
         }}
       />
       <Tabs.Screen
