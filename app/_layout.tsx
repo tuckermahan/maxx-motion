@@ -20,76 +20,55 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const pathname = usePathname();
 
-  // Set mounted flag
   useEffect(() => {
-    setIsMounted(true);
-    return () => setIsMounted(false);
-  }, []);
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  // Authentication check
-  useEffect(() => {
-    if (!isMounted) return;
-
-    const checkAuth = async () => {
+    const prepare = async () => {
       try {
+        // Load fonts
+        if (loaded) {
+          await SplashScreen.hideAsync();
+        }
+
+        // Check authentication status
         const { data, error } = await supabase.auth.getSession();
         const hasSession = !!data.session;
         setIsAuthenticated(hasSession);
-        
-        // Only check routing after we know authentication status
-        if (!hasSession) {
-          // Define routes that should be accessible without authentication
-          const publicPaths = ['/', '/login', '/auth-callback'];
-          const isPublicRoute = publicPaths.some(route => pathname === route);
-          
-          // If not a public route, redirect to login
-          if (!isPublicRoute) {
-            console.log('Redirecting to login, current path:', pathname);
-            router.replace('/login');
-          }
-        }
-        
-        // Listen for auth changes
+
+        // Set up auth state listener
         const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
           console.log('Auth state change:', event);
           setIsAuthenticated(!!session);
-          
+
           if (event === 'SIGNED_OUT') {
-            // Ensure we redirect to home, not dashboard when signing out
             console.log('User signed out, redirecting to home');
-            // Hard redirect to root to reset all navigation state
-            setTimeout(() => {
-              if (typeof window !== 'undefined') {
-                window.location.href = '/';
-              } else {
-                router.replace('/');
-              }
-            }, 0);
+            if (typeof window !== 'undefined') {
+              window.location.href = '/';
+            } else {
+              router.replace('/');
+            }
           }
         });
-        
+
+        // Mark as ready after everything is set up
+        setIsReady(true);
+
         return () => {
           authListener.subscription.unsubscribe();
         };
       } catch (err) {
-        console.error('Auth check error:', err);
+        console.error('Initialization error:', err);
         setIsAuthenticated(false);
+        setIsReady(true);
       }
     };
-    
-    checkAuth();
-  }, [isMounted, pathname]);
 
-  if (!loaded || isAuthenticated === null) {
+    prepare();
+  }, [loaded]);
+
+  // Show loading screen while preparing
+  if (!isReady) {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color="#0a7ea4" />
@@ -98,16 +77,22 @@ export default function RootLayout() {
     );
   }
 
+  // Render the appropriate navigation stack based on auth status
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
-        <Stack.Screen name="join-event" options={{ title: "Join Event", headerLeft: () => null }} />
-        <Stack.Screen name="join-team" options={{ title: "Join Team", headerLeft: () => null }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
+      {isAuthenticated ? (
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="join-event" options={{ title: "Join Event", headerLeft: () => null }} />
+          <Stack.Screen name="join-team" options={{ title: "Join Team", headerLeft: () => null }} />
+        </Stack>
+      ) : (
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
+        </Stack>
+      )}
       <StatusBar style="auto" />
     </ThemeProvider>
   );
