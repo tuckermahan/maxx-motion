@@ -964,35 +964,45 @@ export default function TeamScreen() {
 
     setGoalEditModalVisible(false);
 
-    // Validate input
-    const goalValue = parseInt(newGoalValue);
-    if (isNaN(goalValue) || goalValue <= 0) {
-      Alert.alert('Invalid Value', 'Please enter a positive number for the team goal');
-      return;
-    }
+ // Validate input
+const goalValue = parseInt(newGoalValue);
+if (isNaN(goalValue) || goalValue <= 0) {
+  Alert.alert('Invalid Value', 'Please enter a positive number for the team goal');
+  return;
+}
 
-    // Update team goal in database
-    try {
-      const { error } = await supabase
-        .from('teams')
-        .update({ team_minute_goal: goalValue })
-        .eq('id', userTeam.id);
+// Update team goal in database
+try {
+  const { error } = await supabase
+    .from('teams')
+    .update({ team_minute_goal: goalValue })
+    .eq('id', userTeam.id);
 
-      if (error) throw error;
+  if (error) {
+    console.error('Error updating team goal:', error);
+    Alert.alert('Error', 'Failed to update team goal. Please try again.');
+    return;
+  }
 
-      // Update local state
-      setUserTeam({
-        ...userTeam,
-        team_minute_goal: goalValue
-      });
+  // Update local state
+  setUserTeam({
+    ...userTeam,
+    team_minute_goal: goalValue
+  });
 
-      // Show success message
-      Alert.alert('Success', 'Team goal updated successfully');
-    } catch (error) {
-      console.error('Error updating team goal:', error);
-      Alert.alert('Error', 'Failed to update team goal. Please try again.');
-    }
-  };
+  // Update team stats
+  setTeamStats({
+    ...teamStats,
+    targetMinutes: goalValue
+  });
+
+  // Show success message
+  Alert.alert('Success', 'Team goal updated successfully');
+} catch (error) {
+  console.error('Error updating team goal:', error);
+  Alert.alert('Error', 'Failed to update team goal. Please try again.');
+}
+};
 
   const navigateToJoinEvent = () => {
     router.push('/join-event');
@@ -1029,7 +1039,7 @@ export default function TeamScreen() {
           </View>
         </LinearGradient>
       </ImageBackground>
-      
+
       {!userTeam ? (
         <View style={styles.noTeamContainer}>
           <ThemedText style={styles.noTeamTitle}>You're not part of any team yet</ThemedText>
@@ -1068,34 +1078,34 @@ export default function TeamScreen() {
               </View>
 
               <View style={styles.teamActions}>
-                <Pressable 
-                  style={[styles.actionButton, hoveredButton === 'rank' && styles.actionButtonHovered]} 
+                <Pressable
+                  style={[styles.actionButton, hoveredButton === 'rank' && styles.actionButtonHovered]}
                   onHoverIn={() => setHoveredButton('rank')}
                   onHoverOut={() => setHoveredButton(null)}
                 >
                   <ThemedText style={[
-                    styles.actionButtonText, 
+                    styles.actionButtonText,
                     hoveredButton === 'rank' && styles.actionButtonTextHovered
                   ]}>RANK: {teamRank ? `${teamRank}${teamRank === 1 ? 'st' : teamRank === 2 ? 'nd' : teamRank === 3 ? 'rd' : 'th'}` : '...'}</ThemedText>
                 </Pressable>
-                <Pressable 
-                  style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]} 
+                <Pressable
+                  style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]}
                   onHoverIn={() => setHoveredButton('edit')}
                   onHoverOut={() => setHoveredButton(null)}
                   onPress={showGoalEditModal}
                 >
                   <ThemedText style={[
-                    styles.actionButtonText, 
+                    styles.actionButtonText,
                     hoveredButton === 'edit' && styles.actionButtonTextHovered
                   ]}>EDIT GOAL</ThemedText>
                 </Pressable>
-                <Pressable 
-                  style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]} 
+                <Pressable
+                  style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]}
                   onHoverIn={() => setHoveredButton('invite')}
                   onHoverOut={() => setHoveredButton(null)}
                 >
                   <ThemedText style={[
-                    styles.actionButtonText, 
+                    styles.actionButtonText,
                     hoveredButton === 'invite' && styles.actionButtonTextHovered
                   ]}>INVITE</ThemedText>
                 </Pressable>
@@ -1126,8 +1136,8 @@ export default function TeamScreen() {
               <ThemedView style={styles.card}>
                 <View style={styles.membersHeader}>
                   <ThemedText style={styles.sectionTitle}>Team Members</ThemedText>
-                  <TextInput 
-                    placeholder="Search members..." 
+                  <TextInput
+                    placeholder="Search members..."
                     style={styles.searchInput}
                     value={searchQuery}
                     onChangeText={handleSearch}
@@ -1140,11 +1150,11 @@ export default function TeamScreen() {
                   <ThemedText style={styles.headerMinutes}>MINUTES</ThemedText>
                   <ThemedText style={styles.headerContrib}>CONTRIB/RANK</ThemedText>
                 </View>
-                
+
                 <View style={styles.membersList}>
                   {(searchQuery.trim() === '' ? displayedMembers : filteredMembers).map((member, index) => {
                     const isSearchResult = searchQuery.trim() !== '' && filteredMembers.includes(member);
-                    
+
                     return (
                       <View key={member.id} style={styles.memberItemContainer}>
                         <Image
@@ -1182,7 +1192,7 @@ export default function TeamScreen() {
                       </View>
                     );
                   })}
-                  
+
                   {searchQuery.trim() !== '' && filteredMembers.length === 0 && (
                     <View style={styles.noResultsContainer}>
                       <ThemedText style={styles.noResultsText}>
@@ -1191,9 +1201,9 @@ export default function TeamScreen() {
                     </View>
                   )}
                 </View>
-                
+
                 {searchQuery.trim() === '' && teamMembers.length > 5 && (
-                  <Pressable 
+                  <Pressable
                     onPress={() => setShowAllMembers(!showAllMembers)}
                   >
                     <ThemedText style={styles.seeAllMembers}>
@@ -1206,8 +1216,8 @@ export default function TeamScreen() {
           </ScrollView>
         </>
       )}
-      
-      <MemberDetails 
+
+      <MemberDetails
         isVisible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         member={selectedMember ? {
@@ -1633,12 +1643,12 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: '#C41E3A',
   },
-  
+
   noResultsContainer: {
     padding: 20,
     alignItems: 'center',
   },
-  
+
   noResultsText: {
     fontSize: 16,
     color: '#666666',
