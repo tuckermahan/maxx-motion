@@ -39,7 +39,7 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     try {
       setLoading(true);
-      
+
       // Force navigation to home page before signing out
       setTimeout(() => {
         // Navigate using window.location for a full reset of the app state
@@ -50,10 +50,10 @@ export default function ProfileScreen() {
           router.replace('/');
         }
       }, 100);
-      
+
       // Sign out
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
         Alert.alert('Error', error.message);
       }
@@ -103,7 +103,7 @@ export default function ProfileScreen() {
       <View style={styles.eventHeader}>
         <ThemedText style={styles.eventTitle}>{event.name}</ThemedText>
         <View style={[
-          styles.eventStatusBadge, 
+          styles.eventStatusBadge,
           event.status === 'Active' ? styles.activeEventBadge : styles.upcomingEventBadge
         ]}>
           <ThemedText style={styles.eventStatusText}>{event.status}</ThemedText>
@@ -203,7 +203,7 @@ export default function ProfileScreen() {
               <View style={styles.sectionHeader}>
                 <ThemedText style={styles.sectionTitle}>Activity History</ThemedText>
               </View>
-              
+
               {userProfile.activities.map(activity => (
                 <ActivityCard key={activity.id} activity={activity} />
               ))}
@@ -215,7 +215,7 @@ export default function ProfileScreen() {
               <View style={styles.sectionHeader}>
                 <ThemedText style={styles.sectionTitle}>My Teams</ThemedText>
               </View>
-              
+
               {userProfile.teams.map(team => (
                 <TeamCard key={team.id} team={team} />
               ))}
@@ -227,7 +227,7 @@ export default function ProfileScreen() {
               <View style={styles.sectionHeader}>
                 <ThemedText style={styles.sectionTitle}>Events</ThemedText>
               </View>
-              
+
               {userProfile.events.map(event => (
                 <EventCard key={event.id} event={event} />
               ))}
@@ -306,6 +306,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   tagline: {
+    color: '#fff',
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
