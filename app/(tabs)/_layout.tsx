@@ -75,13 +75,17 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Dashboard',
+          tabBarIcon: ({ color }) => <IconSymbol name="house.fill" color={color} />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
         name="activity"
         options={{
           title: 'Activity',
+          tabBarIcon: ({ color }) => <IconSymbol name="figure.walk" color={color} />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
@@ -101,12 +105,16 @@ export default function TabLayout() {
         name="achievements"
         options={{
           title: 'Achievements',
+          tabBarIcon: ({ color }) => <IconSymbol name="trophy.fill" color={color} />,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
+          tabBarIcon: ({ color }) => <IconSymbol name="person.fill" color={color} />,
+          headerShown: false,
         }}
       />
     </Tabs>
