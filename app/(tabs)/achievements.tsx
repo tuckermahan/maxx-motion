@@ -6,8 +6,11 @@ import Constants from 'expo-constants';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
+import { useRouter } from 'expo-router';
 
 const BADGE_SIZE = (Dimensions.get('window').width - 48) / 3;
+const BADGE_PADDING = 6;
+const GRID_PADDING = 16;
 
 interface Badge {
   id: string;
@@ -194,6 +197,7 @@ export default function AchievementsScreen() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [totalMinutes, setTotalMinutes] = useState(0);
   const scaleAnim = new Animated.Value(1);
+  const router = useRouter();
 
   useEffect(() => {
     fetchMilestones();
@@ -441,7 +445,10 @@ export default function AchievementsScreen() {
     return (
       <View style={styles.milestoneSection}>
         <Text style={styles.milestoneTitle}>Event Milestones</Text>
-        <Text style={styles.milestoneSubtitle}>Total Minutes: {totalMinutes}</Text>
+        <View style={styles.totalMinutesContainer}>
+          <Text style={styles.totalMinutesLabel}>Total Minutes:</Text>
+          <Text style={styles.totalMinutesValue}>{totalMinutes}</Text>
+        </View>
 
         {milestones.map((milestone, index) => (
           <View key={milestone.id} style={styles.milestoneCard}>
@@ -489,19 +496,17 @@ export default function AchievementsScreen() {
       >
         <LinearGradient
           colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
-          locations={[0, 0.5]}
           style={styles.headerOverlay}
+          locations={[0, 0.5]}
         >
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>MAXX Motion</Text>
-            <View style={styles.userIcon}>
-              <Text style={styles.userIconText}>U</Text>
-            </View>
+            <Text style={styles.pageTitle}>MAXX Motion</Text>
+            <TouchableOpacity onPress={() => router.push('/profile')}>
+              <FontAwesome5 name="user-circle" size={24} color="#fff" />
+            </TouchableOpacity>
           </View>
-          <View style={styles.headerContent}>
-            <Text style={styles.pageTitle}>Achievements</Text>
-            <Text style={styles.tagline}>Challenge yourself. Earn rewards.</Text>
-          </View>
+          <Text style={styles.headerTitle}>Achievements</Text>
+          <Text style={styles.headerSubtitle}>Challenge yourself. Earn rewards.</Text>
         </LinearGradient>
       </ImageBackground>
 
@@ -521,46 +526,16 @@ export default function AchievementsScreen() {
       <ScrollView style={styles.content}>
         {renderMilestoneProgress()}
 
-        <View style={styles.badgesGrid}>
-          {badges.map((badge) => (
-            <TouchableOpacity
-              key={badge.id}
-              onPress={() => setSelectedBadge(badge)}
-              style={styles.badgeContainer}
-            >
-              <View style={styles.badge}>
-                {badge.isUnlocked && (
-                  <View style={styles.unlockedOverlay}>
-                    <View style={styles.unlockedIndicator}>
-                      <FontAwesome5 name="check-circle" size={24} color="#4CAF50" />
-                    </View>
-                  </View>
-                )}
-
-                <Image
-                  source={{ uri: badge.imageUrl }}
-                  style={styles.badgeImage}
-                  resizeMode="cover"
-                />
-
-                <View style={styles.badgeContent}>
-                  <Text style={[styles.badgeName, !badge.isUnlocked && styles.badgeNameLocked]}>
-                    {badge.name}
-                  </Text>
-                  <View style={[styles.categoryContainer, { backgroundColor: getCategoryColor(badge.category) }]}>
-                    <Text style={styles.badgeCategory}>{badge.category}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.emojiContainer}>
-                  {renderProgressEmojis(badge)}
-                </View>
-                <Text style={styles.progressText}>
-                  {badge.progress}/{badge.total}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.achievementsSection}>
+          <Text style={styles.achievementsTitle}>My Achievements</Text>
+          <FlatList
+            data={badges}
+            renderItem={renderBadge}
+            keyExtractor={item => item.id}
+            numColumns={3}
+            scrollEnabled={false}
+            contentContainerStyle={styles.badgesGrid}
+          />
         </View>
       </ScrollView>
 
@@ -706,7 +681,7 @@ const styles = StyleSheet.create({
   },
   badgeContainer: {
     width: BADGE_SIZE,
-    padding: 6,
+    padding: BADGE_PADDING,
     backgroundColor: 'transparent',
   },
   badge: {
@@ -790,6 +765,7 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginTop: 4,
+    marginBottom: 8,
   },
   modalOverlay: {
     flex: 1,
@@ -924,6 +900,23 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 16,
   },
+  totalMinutesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  totalMinutesLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 8,
+  },
+  totalMinutesValue: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#C41E3A',
+  },
   milestoneCard: {
     backgroundColor: '#f8f8f8',
     borderRadius: 8,
@@ -976,11 +969,15 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-  badgesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    padding: 16,
+  achievementsSection: {
+    marginTop: 24,
+    paddingHorizontal: GRID_PADDING,
+  },
+  achievementsTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 16,
   },
   milestoneProgressContainer: {
     height: 8,
@@ -993,5 +990,11 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#C41E3A',
     borderRadius: 4,
+  },
+  badgesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: BADGE_PADDING,
   },
 }); 
