@@ -1,13 +1,11 @@
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, Text } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, Text, ImageBackground } from 'react-native';
 import { useEffect } from 'react';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useAuth } from '@/lib/auth';
 import { useUser } from '@/contexts/UserContext';
-import { ImageBackground } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
 
 // Team interface for leaderboard
 interface Team {
@@ -123,115 +121,115 @@ export default function DashboardScreen() {
   }, [user, userProfile]);
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: 'transparent', dark: 'transparent' }}
-      headerImage={
-        <ImageBackground
-          source={require('@/assets/images/gym-equipment.png')}
-          style={styles.headerBackground}
-          resizeMode="cover"
+    <View style={styles.container}>
+      <ImageBackground
+        source={require('@/assets/images/gym-equipment.png')}
+        style={styles.headerBackground}
+        resizeMode="cover"
+      >
+        <LinearGradient
+          colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
+          locations={[0, 0.5]}
+          style={styles.headerOverlay}
         >
-          <LinearGradient
-            colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
-            locations={[0, 0.5]}
-            style={styles.headerOverlay}
-          >
-            <View style={styles.header}>
-              <ThemedText style={styles.headerTitle}>MAXX Motion Challenge</ThemedText>
-              <View style={styles.userIcon}>
-                <ThemedText style={styles.userIconText}>U</ThemedText>
-              </View>
+          <View style={styles.header}>
+            <ThemedText style={styles.headerTitle}>MAXX Motion</ThemedText>
+            <View style={styles.userIcon}>
+              <ThemedText style={styles.userIconText}>U</ThemedText>
             </View>
-            <View style={styles.headerContent}>
-              <ThemedText style={styles.pageTitle}>Dashboard</ThemedText>
-              <ThemedText style={styles.tagline}>Track your motion. Reach your potential.</ThemedText>
-            </View>
-          </LinearGradient>
-        </ImageBackground>
-      }>
-      <ThemedView style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Your Progress</ThemedText>
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View 
-              style={[
-                styles.progressFill, 
-                { width: `${(userProgress.current / userProgress.target) * 100}%` }
-              ]} 
-            />
           </View>
-          <ThemedText style={styles.progressText}>
-            {userProgress.current} / {userProgress.target} min
-          </ThemedText>
-        </View>
-        <ThemedText style={styles.milestoneText}>
-          Current Milestone: {userProgress.currentMilestone}
-        </ThemedText>
-        <ThemedText style={styles.milestoneText}>
-          Next Milestone: {userProgress.nextMilestone}
-        </ThemedText>
-        <TouchableOpacity style={styles.shareButton}>
-          <ThemedText style={styles.shareButtonText}>Share</ThemedText>
-        </TouchableOpacity>
-        <ThemedText type="subtitle">Your Activity</ThemedText>
-        <Text style={styles.comingSoon}>Activity summary coming soon</Text>
-      </ThemedView>
-      
-      {/* Team Leaderboard Section */}
-      <ThemedView style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Team Leaderboard</ThemedText>
-        {teams.map(team => (
-          <View 
-            key={team.id} 
-            style={[
-              styles.teamItem, 
-              team.isUserTeam && styles.userTeamItem
-            ]}
-          >
-            <View style={[styles.rankContainer, { backgroundColor: getRankColor(team.rank) }]}>
-              <ThemedText style={styles.rankText}>{team.rank}</ThemedText>
+          <View style={styles.headerContent}>
+            <ThemedText style={styles.pageTitle}>Dashboard</ThemedText>
+            <ThemedText style={styles.tagline}>Track your motion. Reach your potential.</ThemedText>
+          </View>
+        </LinearGradient>
+      </ImageBackground>
+
+      <ScrollView style={styles.scrollContent}>
+        <ThemedView style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Your Progress</ThemedText>
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View 
+                style={[
+                  styles.progressFill, 
+                  { width: `${(userProgress.current / userProgress.target) * 100}%` }
+                ]} 
+              />
             </View>
-            <View style={styles.teamDetails}>
-              <ThemedText style={styles.teamName}>
-                {team.name} {team.isUserTeam && "(Your Team)"}
-              </ThemedText>
-              <ThemedText style={styles.teamSubtext}>
-                {team.members} members • {team.totalMinutes} minutes
-              </ThemedText>
-            </View>
-            <ThemedText style={styles.teamMetric}>
-              {team.minutesPerMember} min/member
+            <ThemedText style={styles.progressText}>
+              {userProgress.current} / {userProgress.target} min
             </ThemedText>
           </View>
-        ))}
-        <ThemedText type="subtitle">Your Team</ThemedText>
-        <Text style={styles.comingSoon}>Team summary coming soon</Text>
-      </ThemedView>
-
-      {/* Recent Activities Section */}
-      <ThemedView style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Recent Activities</ThemedText>
-        {activities.map(activity => (
-          <View key={activity.id} style={styles.activityItem}>
-            <View style={[styles.activityIcon, { backgroundColor: activity.color }]}>
-              <ThemedText style={styles.activityInitial}>{activity.initial}</ThemedText>
+          <ThemedText style={styles.milestoneText}>
+            Current Milestone: {userProgress.currentMilestone}
+          </ThemedText>
+          <ThemedText style={styles.milestoneText}>
+            Next Milestone: {userProgress.nextMilestone}
+          </ThemedText>
+          <TouchableOpacity style={styles.shareButton}>
+            <ThemedText style={styles.shareButtonText}>Share</ThemedText>
+          </TouchableOpacity>
+          <ThemedText type="subtitle">Your Activity</ThemedText>
+          <Text style={styles.comingSoon}>Activity summary coming soon</Text>
+        </ThemedView>
+        
+        {/* Team Leaderboard Section */}
+        <ThemedView style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Team Leaderboard</ThemedText>
+          {teams.map(team => (
+            <View 
+              key={team.id} 
+              style={[
+                styles.teamItem, 
+                team.isUserTeam && styles.userTeamItem
+              ]}
+            >
+              <View style={[styles.rankContainer, { backgroundColor: getRankColor(team.rank) }]}>
+                <ThemedText style={styles.rankText}>{team.rank}</ThemedText>
+              </View>
+              <View style={styles.teamDetails}>
+                <ThemedText style={styles.teamName}>
+                  {team.name} {team.isUserTeam && "(Your Team)"}
+                </ThemedText>
+                <ThemedText style={styles.teamSubtext}>
+                  {team.members} members • {team.totalMinutes} minutes
+                </ThemedText>
+              </View>
+              <ThemedText style={styles.teamMetric}>
+                {team.minutesPerMember} min/member
+              </ThemedText>
             </View>
-            <View style={styles.activityDetails}>
-              <ThemedText style={styles.activityType}>{activity.type}</ThemedText>
-              <ThemedText style={styles.activityTime}>{activity.time} • {activity.duration} minutes</ThemedText>
-            </View>
-            <ThemedText style={styles.activitySource}>{activity.source}</ThemedText>
-          </View>
-        ))}
-        <ThemedText type="subtitle">Recent Achievements</ThemedText>
-        <Text style={styles.comingSoon}>Achievements coming soon</Text>
-      </ThemedView>
+          ))}
+          <ThemedText type="subtitle">Your Team</ThemedText>
+          <Text style={styles.comingSoon}>Team summary coming soon</Text>
+        </ThemedView>
 
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab}>
-        <ThemedText style={styles.fabIcon}>+</ThemedText>
-      </TouchableOpacity>
-    </ParallaxScrollView>
+        {/* Recent Activities Section */}
+        <ThemedView style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Recent Activities</ThemedText>
+          {activities.map(activity => (
+            <View key={activity.id} style={styles.activityItem}>
+              <View style={[styles.activityIcon, { backgroundColor: activity.color }]}>
+                <ThemedText style={styles.activityInitial}>{activity.initial}</ThemedText>
+              </View>
+              <View style={styles.activityDetails}>
+                <ThemedText style={styles.activityType}>{activity.type}</ThemedText>
+                <ThemedText style={styles.activityTime}>{activity.time} • {activity.duration} minutes</ThemedText>
+              </View>
+              <ThemedText style={styles.activitySource}>{activity.source}</ThemedText>
+            </View>
+          ))}
+          <ThemedText type="subtitle">Recent Achievements</ThemedText>
+          <Text style={styles.comingSoon}>Achievements coming soon</Text>
+        </ThemedView>
+
+        {/* Floating Action Button */}
+        <TouchableOpacity style={styles.fab}>
+          <ThemedText style={styles.fabIcon}>+</ThemedText>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -252,9 +250,16 @@ function getRankColor(rank: number): string {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  scrollContent: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   headerBackground: {
     height: 300,
-    width: '100%'
   },
   headerOverlay: {
     flex: 1,
@@ -265,12 +270,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     zIndex: 1,
-  },
-  headerContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
   },
   headerTitle: {
     color: '#fff',
@@ -290,15 +289,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#C41E3A',
   },
-  container: {
+  headerContent: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
-  },
-  headerBar: {
-    backgroundColor: '#C41E3A',
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
   },
   pageTitle: {
     fontSize: 32,
