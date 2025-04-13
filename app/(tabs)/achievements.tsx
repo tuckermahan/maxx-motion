@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, FlatList, Animated, TouchableOpacity, Modal, Dimensions, Platform, Image } from 'react-native';
+import { StyleSheet, View, Text, FlatList, Animated, TouchableOpacity, Modal, Dimensions, Platform, Image, ImageBackground } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import Constants from 'expo-constants';
@@ -411,16 +411,28 @@ export default function AchievementsScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
-        locations={[0, 0.5]}
-        style={styles.header}
+      <ImageBackground
+        source={require('@/assets/images/gym-equipment.png')}
+        style={styles.headerBackground}
+        resizeMode="cover"
       >
-        <View style={styles.headerContent}>
-          <Text style={styles.pageTitle}>Achievements</Text>
-          <Text style={styles.tagline}>Challenge yourself. Earn rewards.</Text>
-        </View>
-      </LinearGradient>
+        <LinearGradient
+          colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
+          locations={[0, 0.5]}
+          style={styles.headerOverlay}
+        >
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>MAXX Motion</Text>
+            <View style={styles.userIcon}>
+              <Text style={styles.userIconText}>U</Text>
+            </View>
+          </View>
+          <View style={styles.headerContent}>
+            <Text style={styles.pageTitle}>Achievements</Text>
+            <Text style={styles.tagline}>Challenge yourself. Earn rewards.</Text>
+          </View>
+        </LinearGradient>
+      </ImageBackground>
 
       <View style={styles.streakContainer}>
         <View style={styles.streakIconContainer}>
@@ -486,13 +498,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingTop: Constants.statusBarHeight,
   },
+  headerBackground: {
+    height: 300,
+  },
+  headerOverlay: {
+    flex: 1,
+  },
   header: {
-    height: 180,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    zIndex: 1,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  userIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+  },
+  userIconText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#C41E3A',
   },
   headerContent: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 40,
   },
   pageTitle: {
     fontSize: 32,
