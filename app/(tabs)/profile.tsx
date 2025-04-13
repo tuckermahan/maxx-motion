@@ -117,86 +117,86 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView>
-        <ImageBackground
-          source={require('@/assets/images/gym-equipment.png')}
-          style={styles.headerBackground}
-          resizeMode="cover"
+      <ImageBackground
+        source={require('@/assets/images/gym-equipment.png')}
+        style={styles.headerBackground}
+        resizeMode="cover"
+      >
+        <LinearGradient
+          colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
+          locations={[0, 0.5]}
+          style={styles.headerOverlay}
         >
-          <LinearGradient
-            colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
-            locations={[0, 0.5]}
-            style={styles.headerOverlay}
-          >
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>MAXX Motion</Text>
-              <View style={styles.userIcon}>
-                <Text style={styles.userIconText}>U</Text>
-              </View>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>MAXX Motion</Text>
+            <View style={styles.userIcon}>
+              <Text style={styles.userIconText}>U</Text>
             </View>
-            <View style={styles.headerContent}>
-              <Text style={styles.pageTitle}>My Profile</Text>
-              <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
-            </View>
-          </LinearGradient>
-        </ImageBackground>
+          </View>
+          <View style={styles.headerContent}>
+            <Text style={styles.pageTitle}>My Profile</Text>
+            <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
+          </View>
+        </LinearGradient>
+      </ImageBackground>
 
-        <ThemedView style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <View style={styles.profileAvatar}>
-              <Text style={styles.profileAvatarText}>YO</Text>
-            </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{userProfile.name}</Text>
-              <Text style={styles.profileDetails}>
-                Member since {new Date(userProfile.joined).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </Text>
-              <View style={styles.badgeContainer}>
-                <View style={styles.rankBadge}>
-                  <Text style={styles.rankText}>Rank #{userProfile.rank}</Text>
-                </View>
-                <View style={styles.minutesBadge}>
-                  <Text style={styles.minutesText}>{userProfile.totalMinutes} mins</Text>
-                </View>
-                <View style={styles.contributionBadge}>
-                  <Text style={styles.contributionText}>{userProfile.contribution_percentage}</Text>
-                </View>
+      <ThemedView style={styles.profileCard}>
+        <View style={styles.profileHeader}>
+          <View style={styles.profileAvatar}>
+            <Text style={styles.profileAvatarText}>YO</Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{userProfile.name}</Text>
+            <Text style={styles.profileDetails}>
+              Member since {new Date(userProfile.joined).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+              })}
+            </Text>
+            <View style={styles.badgeContainer}>
+              <View style={styles.rankBadge}>
+                <Text style={styles.rankText}>Rank #{userProfile.rank}</Text>
+              </View>
+              <View style={styles.minutesBadge}>
+                <Text style={styles.minutesText}>{userProfile.totalMinutes} mins</Text>
+              </View>
+              <View style={styles.contributionBadge}>
+                <Text style={styles.contributionText}>{userProfile.contribution_percentage}</Text>
               </View>
             </View>
           </View>
-      </ThemedView>
-      
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'activities' && styles.activeTab]}
-            onPress={() => setActiveTab('activities')}
-          >
-            <Text style={[styles.tabText, activeTab === 'activities' && styles.activeTabText]}>
-              ACTIVITIES
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'teams' && styles.activeTab]}
-            onPress={() => setActiveTab('teams')}
-          >
-            <Text style={[styles.tabText, activeTab === 'teams' && styles.activeTabText]}>
-              TEAMS
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'events' && styles.activeTab]}
-            onPress={() => setActiveTab('events')}
-          >
-            <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
-              EVENTS
-            </Text>
-          </TouchableOpacity>
         </View>
+      </ThemedView>
 
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'activities' && styles.activeTab]}
+          onPress={() => setActiveTab('activities')}
+        >
+          <Text style={[styles.tabText, activeTab === 'activities' && styles.activeTabText]}>
+            ACTIVITIES
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'teams' && styles.activeTab]}
+          onPress={() => setActiveTab('teams')}
+        >
+          <Text style={[styles.tabText, activeTab === 'teams' && styles.activeTabText]}>
+            TEAMS
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'events' && styles.activeTab]}
+          onPress={() => setActiveTab('events')}
+        >
+          <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
+            EVENTS
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.content}>
         <View style={styles.contentContainer}>
           {activeTab === 'activities' && (
             <View>
@@ -236,20 +236,20 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.logoutContainer}>
-        <TouchableOpacity 
-          style={styles.logoutButton} 
-          onPress={handleLogout}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <View style={styles.logoutButtonContent}>
-              <IconSymbol name="rectangle.portrait.and.arrow.right" color="#FFFFFF" size={18} />
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={handleLogout}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <View style={styles.logoutButtonContent}>
+                <IconSymbol name="rectangle.portrait.and.arrow.right" color="#FFFFFF" size={18} />
                 <Text style={styles.logoutText}>Sign Out</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -306,7 +306,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   tagline: {
-    color: '#fff',
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
@@ -400,6 +399,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+    backgroundColor: '#fff',
   },
   tab: {
     flex: 1,
@@ -418,8 +418,11 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#2196F3',
   },
-  contentContainer: {
+  content: {
     flex: 1,
+    backgroundColor: '#fff',
+  },
+  contentContainer: {
     padding: 16,
     paddingBottom: 32,
   },

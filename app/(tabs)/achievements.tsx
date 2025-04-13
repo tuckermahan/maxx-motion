@@ -508,12 +508,7 @@ export default function AchievementsScreen() {
           <View style={styles.headerContent}>
             <Text style={styles.pageTitle}>Achievements</Text>
             <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
-            <TouchableOpacity onPress={() => router.push('/profile')}>
-              <FontAwesome5 name="user-circle" size={24} color="#fff" />
-            </TouchableOpacity>
           </View>
-          <Text style={styles.headerTitle}>Achievements</Text>
-          <Text style={styles.headerSubtitle}>Challenge yourself. Earn rewards.</Text>
         </LinearGradient>
       </ImageBackground>
 
