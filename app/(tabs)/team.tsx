@@ -599,17 +599,17 @@ export default function TeamScreen() {
           <LinearGradient
             colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
             locations={[0, 0.5]}
-            style={styles.gradientOverlay}
+            style={styles.headerOverlay}
           >
-            <View style={styles.headerTopBar}>
-              <Text style={styles.appTitle}>MAXX Motion</Text>
-              <View style={styles.logoContainer}>
-                <Text style={styles.logoText}>U</Text>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>MAXX Motion</Text>
+              <View style={styles.userIcon}>
+                <Text style={styles.userIconText}>U</Text>
               </View>
             </View>
             <View style={styles.headerContent}>
-              <Text style={styles.headerMainTitle}>Team</Text>
-              <Text style={styles.headerSubtitle}>Track your motion. Reach your potential.</Text>
+              <Text style={styles.pageTitle}>Team</Text>
+              <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
             </View>
           </LinearGradient>
         </ImageBackground>
@@ -628,28 +628,28 @@ export default function TeamScreen() {
   return (
     <View style={styles.container}>
       <ScrollView>
-        <ImageBackground
-          source={require('@/assets/images/gym-equipment.png')}
-          style={styles.headerBackground}
-          resizeMode="cover"
+      <ImageBackground
+        source={require('@/assets/images/gym-equipment.png')}
+        style={styles.headerBackground}
+        resizeMode="cover"
+      >
+        <LinearGradient
+          colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
+          locations={[0, 0.5]}
+          style={styles.headerOverlay}
         >
-          <LinearGradient
-            colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
-            locations={[0, 0.5]}
-            style={styles.gradientOverlay}
-          >
-            <View style={styles.headerTopBar}>
-              <Text style={styles.appTitle}>MAXX Motion</Text>
-              <View style={styles.logoContainer}>
-                <Text style={styles.logoText}>U</Text>
-              </View>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>MAXX Motion</Text>
+            <View style={styles.userIcon}>
+              <Text style={styles.userIconText}>U</Text>
             </View>
-            <View style={styles.headerContent}>
-              <Text style={styles.headerMainTitle}>Team</Text>
-              <Text style={styles.headerSubtitle}>Track your motion. Reach your potential.</Text>
-            </View>
-          </LinearGradient>
-        </ImageBackground>
+          </View>
+          <View style={styles.headerContent}>
+            <Text style={styles.pageTitle}>Team</Text>
+            <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
+          </View>
+        </LinearGradient>
+      </ImageBackground>
         
         <View style={styles.content}>
           <ThemedView style={styles.card}>
@@ -864,13 +864,13 @@ export default function TeamScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#fff',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#fff',
   },
   loadingText: {
     marginTop: 16,
@@ -907,60 +907,56 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   headerBackground: {
-    width: '100%',
-    height: 240,
-    resizeMode: 'cover',
+    height: 300,
   },
-  gradientOverlay: {
+  headerOverlay: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Add light overlay for better text visibility
   },
-  headerContent: {
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingBottom: 20,
-    alignItems: 'center',
-  },
-  headerTopBar: {
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
+    justifyContent: 'space-between',
+    padding: 16,
+    zIndex: 1,
   },
-  appTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
+  headerTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
   },
-  logoContainer: {
+  userIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userIconText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#C41E3A',
+  },
+  headerContent: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 40,
   },
-  logoText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#DC143C',
-  },
-  headerMainTitle: {
+  pageTitle: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
-    marginTop: 40,
+    fontWeight: '700',
+    color: '#fff',
     textAlign: 'center',
+    marginBottom: 8,
   },
-  headerSubtitle: {
+  tagline: {
     fontSize: 16,
-    color: 'white',
-    opacity: 0.9,
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
   },
   content: {
+    flex: 1,
     padding: 16,
     paddingBottom: 100, // Extra padding to account for tab bar
   },

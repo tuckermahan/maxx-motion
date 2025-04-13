@@ -137,7 +137,7 @@ export default function DashboardScreen() {
             style={styles.headerOverlay}
           >
             <View style={styles.header}>
-              <ThemedText style={styles.headerTitle}>MAXX Motion Challenge</ThemedText>
+              <ThemedText style={styles.headerTitle}>MAXX Motion</ThemedText>
               <View style={styles.userIcon}>
                 <ThemedText style={styles.userIconText}>U</ThemedText>
               </View>

@@ -168,9 +168,9 @@ export default function ProfileScreen() {
               </View>
             </View>
           </View>
-        </ThemedView>
-
-        <View style={styles.tabs}>
+      </ThemedView>
+      
+        <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'activities' && styles.activeTab]}
             onPress={() => setActiveTab('activities')}
@@ -197,7 +197,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.content}>
+        <View style={styles.contentContainer}>
           {activeTab === 'activities' && (
             <View>
               <View style={styles.sectionHeader}>
@@ -236,20 +236,20 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.logoutContainer}>
-          <TouchableOpacity 
-            style={styles.logoutButton} 
-            onPress={handleLogout}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <View style={styles.logoutButtonContent}>
-                <IconSymbol name="rectangle.portrait.and.arrow.right" color="#FFFFFF" size={18} />
+        <TouchableOpacity 
+          style={styles.logoutButton} 
+          onPress={handleLogout}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <View style={styles.logoutButtonContent}>
+              <IconSymbol name="rectangle.portrait.and.arrow.right" color="#FFFFFF" size={18} />
                 <Text style={styles.logoutText}>Sign Out</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+            </View>
+          )}
+        </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -259,170 +259,166 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#fff',
   },
   headerBackground: {
-    width: '100%',
-    height: 220,
+    height: 300,
   },
   headerOverlay: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingHorizontal: 16,
-    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
-    marginBottom: 40,
+    justifyContent: 'space-between',
+    padding: 16,
+    zIndex: 1,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
   },
   userIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'white',
-    justifyContent: 'center',
+    backgroundColor: '#fff',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   userIconText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#C41E3A',
   },
   headerContent: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    paddingVertical: 40,
   },
   pageTitle: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
+    fontWeight: '700',
+    color: '#fff',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   tagline: {
     fontSize: 16,
-    color: 'white',
-    opacity: 0.9,
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
   },
   profileCard: {
     backgroundColor: 'white',
-    margin: 16,
     borderRadius: 12,
+    margin: 16,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   profileAvatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#C41E3A',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
   profileAvatarText: {
-    fontSize: 24,
     color: 'white',
+    fontSize: 24,
     fontWeight: 'bold',
   },
   profileInfo: {
     flex: 1,
   },
   profileName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 5,
+    color: '#333',
+    marginBottom: 4,
   },
   profileDetails: {
     fontSize: 14,
-    color: '#666666',
+    color: '#666',
     marginBottom: 8,
   },
   badgeContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     flexWrap: 'wrap',
+    marginTop: 4,
     gap: 8,
   },
   rankBadge: {
-    backgroundColor: '#C41E3A',
-    paddingVertical: 4,
+    backgroundColor: '#FFF5F5',
     paddingHorizontal: 10,
-    borderRadius: 12,
-    marginRight: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
   },
   rankText: {
-    color: 'white',
+    color: '#C41E3A',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   minutesBadge: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 4,
+    backgroundColor: '#E3F2FD',
     paddingHorizontal: 10,
-    borderRadius: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
   },
   minutesText: {
-    color: 'white',
+    color: '#2196F3',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   contributionBadge: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 4,
+    backgroundColor: '#E8F5E9',
     paddingHorizontal: 10,
-    borderRadius: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
   },
   contributionText: {
-    color: 'white',
+    color: '#4CAF50',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  tabs: {
+  tabContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 8,
-    marginHorizontal: 16,
-    marginTop: 8,
-    overflow: 'hidden',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
   tab: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
   },
   activeTab: {
+    borderBottomWidth: 2,
     borderBottomColor: '#2196F3',
   },
   tabText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#666666',
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#757575',
   },
   activeTabText: {
     color: '#2196F3',
   },
-  content: {
+  contentContainer: {
+    flex: 1,
     padding: 16,
     paddingBottom: 32,
   },
