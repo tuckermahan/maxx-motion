@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Image, Pressable, Platform, ImageBackground, Text, ActivityIndicator, TouchableOpacity, Modal, Alert } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
+import { StyleSheet, View, TextInput, Image, Pressable, Platform, ImageBackground, Text, ActivityIndicator, TouchableOpacity, Modal, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -1006,214 +1005,209 @@ export default function TeamScreen() {
     ? Math.min(100, (teamStats.totalMinutes / teamStats.targetMinutes) * 100)
     : 0;
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#C41E3A" />
-        <Text style={styles.loadingText}>Loading team data...</Text>
-      </View>
-    );
-  }
-
-  if (!userTeam) {
-    // User is not part of any team - show button to join
-    return (
-      <View style={styles.noTeamContainer}>
-        <Text style={styles.noTeamText}>You are not part of any team yet.</Text>
-        <TouchableOpacity
-          style={styles.joinEventButton}
-          onPress={navigateToJoinEvent}
-        >
-          <Text style={styles.joinEventButtonText}>Join an Event</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <ScrollView>
-        <ImageBackground
-          source={require('@/assets/images/gym-equipment.png')}
-          style={styles.headerBackground}
-          resizeMode="cover"
+      <ImageBackground
+        source={require('@/assets/images/gym-equipment.png')}
+        style={styles.headerBackground}
+        resizeMode="cover"
+      >
+        <LinearGradient
+          colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
+          locations={[0, 0.5]}
+          style={styles.headerOverlay}
         >
-          <LinearGradient
-            colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
-            locations={[0, 0.5]}
-            style={styles.gradientOverlay}
-          >
-            <View style={styles.headerTopBar}>
-              <Text style={styles.headerTitle}>MAXX Motion</Text>
-              <View style={styles.userIcon}>
-                <Text style={styles.userIconText}>U</Text>
-              </View>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>MAXX Motion</Text>
+            <View style={styles.userIcon}>
+              <Text style={styles.userIconText}>U</Text>
             </View>
-            <View style={styles.headerContent}>
-              <Text style={styles.pageTitle}>Team</Text>
-              <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
-            </View>
-          </LinearGradient>
-        </ImageBackground>
-
-        <View style={styles.content}>
-          <ThemedView style={styles.card}>
-            <View style={styles.teamInfo}>
-              <View style={styles.teamIcon}>
-                <ThemedText style={styles.teamIconText}>
-                  {userTeam.team_name.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase()}
-                </ThemedText>
-              </View>
-              <View style={styles.teamDetails}>
-                <ThemedText style={styles.teamName}>{userTeam.team_name}</ThemedText>
-                <ThemedText style={styles.teamSubtext}>
-                  {teamMembers.length} Members • Captain: {teamMembers.find(m => m.is_captain)?.full_name || 'Unknown'}
-                </ThemedText>
-                <View style={styles.progressContainer}>
-                  <View style={[styles.progressBar, { width: `${progressPercentage}%` }]} />
-                  <ThemedText style={styles.progressText}>
-                    {teamStats.totalMinutes} / {teamStats.targetMinutes} minutes
-                  </ThemedText>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.teamActions}>
-              <Pressable
-                style={[styles.actionButton, hoveredButton === 'rank' && styles.actionButtonHovered]}
-                onHoverIn={() => setHoveredButton('rank')}
-                onHoverOut={() => setHoveredButton(null)}
-              >
-                <ThemedText style={[
-                  styles.actionButtonText,
-                  hoveredButton === 'rank' && styles.actionButtonTextHovered
-                ]}>RANK: {teamRank ? `${teamRank}${teamRank === 1 ? 'st' : teamRank === 2 ? 'nd' : teamRank === 3 ? 'rd' : 'th'}` : '...'}</ThemedText>
-              </Pressable>
-              <Pressable
-                style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]}
-                onHoverIn={() => setHoveredButton('edit')}
-                onHoverOut={() => setHoveredButton(null)}
-                onPress={showGoalEditModal}
-              >
-                <ThemedText style={[
-                  styles.actionButtonText,
-                  hoveredButton === 'edit' && styles.actionButtonTextHovered
-                ]}>EDIT GOAL</ThemedText>
-              </Pressable>
-              <Pressable
-                style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]}
-                onHoverIn={() => setHoveredButton('invite')}
-                onHoverOut={() => setHoveredButton(null)}
-              >
-                <ThemedText style={[
-                  styles.actionButtonText,
-                  hoveredButton === 'invite' && styles.actionButtonTextHovered
-                ]}>INVITE</ThemedText>
-              </Pressable>
-            </View>
-          </ThemedView>
-
-          <ThemedView style={styles.card}>
-            <ThemedText style={[styles.sectionTitle, { marginBottom: 16 }]}>Team Statistics</ThemedText>
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <ThemedText style={styles.statValue}>{teamStats.avgMinPerMember}</ThemedText>
-                <ThemedText style={styles.statLabel}>Avg Min/Member</ThemedText>
-              </View>
-              <View style={styles.statCard}>
-                <ThemedText style={styles.statValue}>{teamStats.activeMembers}</ThemedText>
-                <ThemedText style={styles.statLabel}>Active Members</ThemedText>
-              </View>
-              <View style={styles.statCard}>
-                <ThemedText style={styles.statValue}>+{teamStats.weeklyGrowth}%</ThemedText>
-                <ThemedText style={styles.statLabel}>Weekly Growth</ThemedText>
-              </View>
-            </View>
-          </ThemedView>
-
-          <ThemedView style={styles.card}>
-            <View style={styles.membersHeader}>
-              <ThemedText style={styles.sectionTitle}>Team Members</ThemedText>
-              <TextInput
-                placeholder="Search members..."
-                style={styles.searchInput}
-                value={searchQuery}
-                onChangeText={handleSearch}
-              />
-            </View>
-
-            <View style={styles.tableHeader}>
-              <ThemedText style={styles.headerMember}>MEMBER</ThemedText>
-              <ThemedText style={styles.headerRole}>ROLE</ThemedText>
-              <ThemedText style={styles.headerMinutes}>MINUTES</ThemedText>
-              <ThemedText style={styles.headerContrib}>CONTRIB/RANK</ThemedText>
-            </View>
-
-            <View style={styles.membersList}>
-              {(searchQuery.trim() === '' ? displayedMembers : filteredMembers).map((member, index) => {
-                const isSearchResult = searchQuery.trim() !== '' && filteredMembers.includes(member);
-
-                return (
-                  <View key={member.id} style={styles.memberItemContainer}>
-                    <Image
-                      source={{ uri: member.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.full_name)}&background=random` }}
-                      style={styles.memberAvatar}
-                    />
-                    <Pressable
-                      onHoverIn={() => setHoveredMemberId(member.id)}
-                      onHoverOut={() => setHoveredMemberId(null)}
-                      onPress={() => handleMemberPress(member)}
-                      style={[
-                        styles.memberItem,
-                        getMemberRowStyle(member.id, index, isSearchResult)
-                      ]}
-                    >
-                      <View style={styles.memberColumnContent}>
-                        <View style={styles.memberDetails}>
-                          <ThemedText style={styles.memberName}>{member.full_name}</ThemedText>
-                          <ThemedText style={styles.memberLastActive}>
-                            Active since {new Date(member.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </ThemedText>
-                        </View>
-                      </View>
-                      <View style={styles.roleColumnContent}>
-                        <ThemedText style={styles.memberRole}>{member.is_captain ? 'Captain' : 'Member'}</ThemedText>
-                      </View>
-                      <View style={styles.minutesColumnContent}>
-                        <ThemedText style={styles.memberMinutes}>{member.total_minutes}</ThemedText>
-                      </View>
-                      <View style={styles.contribColumnContent}>
-                        <ThemedText style={styles.memberContribution}>{member.contribution_percentage}</ThemedText>
-                        <ThemedText style={styles.memberRank}>#{member.rank}</ThemedText>
-                      </View>
-                    </Pressable>
-                  </View>
-                );
-              })}
-
-              {searchQuery.trim() !== '' && filteredMembers.length === 0 && (
-                <View style={styles.noResultsContainer}>
-                  <ThemedText style={styles.noResultsText}>
-                    No members found matching "{searchQuery}"
-                  </ThemedText>
-                </View>
-              )}
-            </View>
-
-            {searchQuery.trim() === '' && teamMembers.length > 5 && (
-              <Pressable
-                onPress={() => setShowAllMembers(!showAllMembers)}
-              >
-                <ThemedText style={styles.seeAllMembers}>
-                  {showAllMembers ? 'SHOW LESS' : `SEE ALL MEMBERS (${teamMembers.length})`}
-                </ThemedText>
-              </Pressable>
-            )}
-          </ThemedView>
+          </View>
+          <View style={styles.headerContent}>
+            <Text style={styles.pageTitle}>Team</Text>
+            <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
+          </View>
+        </LinearGradient>
+      </ImageBackground>
+      
+      {!userTeam ? (
+        <View style={styles.noTeamContainer}>
+          <ThemedText style={styles.noTeamTitle}>You're not part of any team yet</ThemedText>
+          <ThemedText style={styles.noTeamSubtext}>Join a team to start tracking your progress together!</ThemedText>
+          <TouchableOpacity style={styles.joinButton} onPress={navigateToJoinEvent}>
+            <ThemedText style={styles.joinButtonText}>Join an Event & Team</ThemedText>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
+      ) : loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#C41E3A" />
+          <Text style={styles.loadingText}>Loading team data...</Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.mainContent}>
+            <ThemedView style={styles.card}>
+              <View style={styles.teamInfo}>
+                <View style={styles.teamIcon}>
+                  <ThemedText style={styles.teamIconText}>
+                    {userTeam.team_name.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase()}
+                  </ThemedText>
+                </View>
+                <View style={styles.teamDetails}>
+                  <ThemedText style={styles.teamName}>{userTeam.team_name}</ThemedText>
+                  <ThemedText style={styles.teamSubtext}>
+                    {teamMembers.length} Members • Captain: {teamMembers.find(m => m.is_captain)?.full_name || 'Unknown'}
+                  </ThemedText>
+                  <View style={styles.progressContainer}>
+                    <View style={[styles.progressBar, { width: `${progressPercentage}%` }]} />
+                    <ThemedText style={styles.progressText}>
+                      {teamStats.totalMinutes} / {teamStats.targetMinutes} minutes
+                    </ThemedText>
+                  </View>
+                </View>
+              </View>
 
-      <MemberDetails
+              <View style={styles.teamActions}>
+                <Pressable 
+                  style={[styles.actionButton, hoveredButton === 'rank' && styles.actionButtonHovered]} 
+                  onHoverIn={() => setHoveredButton('rank')}
+                  onHoverOut={() => setHoveredButton(null)}
+                >
+                  <ThemedText style={[
+                    styles.actionButtonText, 
+                    hoveredButton === 'rank' && styles.actionButtonTextHovered
+                  ]}>RANK: {teamRank ? `${teamRank}${teamRank === 1 ? 'st' : teamRank === 2 ? 'nd' : teamRank === 3 ? 'rd' : 'th'}` : '...'}</ThemedText>
+                </Pressable>
+                <Pressable 
+                  style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]} 
+                  onHoverIn={() => setHoveredButton('edit')}
+                  onHoverOut={() => setHoveredButton(null)}
+                  onPress={showGoalEditModal}
+                >
+                  <ThemedText style={[
+                    styles.actionButtonText, 
+                    hoveredButton === 'edit' && styles.actionButtonTextHovered
+                  ]}>EDIT GOAL</ThemedText>
+                </Pressable>
+                <Pressable 
+                  style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]} 
+                  onHoverIn={() => setHoveredButton('invite')}
+                  onHoverOut={() => setHoveredButton(null)}
+                >
+                  <ThemedText style={[
+                    styles.actionButtonText, 
+                    hoveredButton === 'invite' && styles.actionButtonTextHovered
+                  ]}>INVITE</ThemedText>
+                </Pressable>
+              </View>
+            </ThemedView>
+          </View>
+
+          <ScrollView style={styles.scrollContent}>
+            <View style={styles.content}>
+              <ThemedView style={styles.card}>
+                <ThemedText style={[styles.sectionTitle, { marginBottom: 16 }]}>Team Statistics</ThemedText>
+                <View style={styles.statsRow}>
+                  <View style={styles.statCard}>
+                    <ThemedText style={styles.statValue}>{teamStats.avgMinPerMember}</ThemedText>
+                    <ThemedText style={styles.statLabel}>Avg Min/Member</ThemedText>
+                  </View>
+                  <View style={styles.statCard}>
+                    <ThemedText style={styles.statValue}>{teamStats.activeMembers}</ThemedText>
+                    <ThemedText style={styles.statLabel}>Active Members</ThemedText>
+                  </View>
+                  <View style={styles.statCard}>
+                    <ThemedText style={styles.statValue}>+{teamStats.weeklyGrowth}%</ThemedText>
+                    <ThemedText style={styles.statLabel}>Weekly Growth</ThemedText>
+                  </View>
+                </View>
+              </ThemedView>
+
+              <ThemedView style={styles.card}>
+                <View style={styles.membersHeader}>
+                  <ThemedText style={styles.sectionTitle}>Team Members</ThemedText>
+                  <TextInput 
+                    placeholder="Search members..." 
+                    style={styles.searchInput}
+                    value={searchQuery}
+                    onChangeText={handleSearch}
+                  />
+                </View>
+
+                <View style={styles.tableHeader}>
+                  <ThemedText style={styles.headerMember}>MEMBER</ThemedText>
+                  <ThemedText style={styles.headerRole}>ROLE</ThemedText>
+                  <ThemedText style={styles.headerMinutes}>MINUTES</ThemedText>
+                  <ThemedText style={styles.headerContrib}>CONTRIB/RANK</ThemedText>
+                </View>
+                
+                <View style={styles.membersList}>
+                  {(searchQuery.trim() === '' ? displayedMembers : filteredMembers).map((member, index) => {
+                    const isSearchResult = searchQuery.trim() !== '' && filteredMembers.includes(member);
+                    
+                    return (
+                      <View key={member.id} style={styles.memberItemContainer}>
+                        <Image
+                          source={{ uri: member.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.full_name)}&background=random` }}
+                          style={styles.memberAvatar}
+                        />
+                        <Pressable
+                          onHoverIn={() => setHoveredMemberId(member.id)}
+                          onHoverOut={() => setHoveredMemberId(null)}
+                          onPress={() => handleMemberPress(member)}
+                          style={[
+                            styles.memberItem,
+                            getMemberRowStyle(member.id, index, isSearchResult)
+                          ]}
+                        >
+                          <View style={styles.memberColumnContent}>
+                            <View style={styles.memberDetails}>
+                              <ThemedText style={styles.memberName}>{member.full_name}</ThemedText>
+                              <ThemedText style={styles.memberLastActive}>
+                                Active since {new Date(member.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </ThemedText>
+                            </View>
+                          </View>
+                          <View style={styles.roleColumnContent}>
+                            <ThemedText style={styles.memberRole}>{member.is_captain ? 'Captain' : 'Member'}</ThemedText>
+                          </View>
+                          <View style={styles.minutesColumnContent}>
+                            <ThemedText style={styles.memberMinutes}>{member.total_minutes}</ThemedText>
+                          </View>
+                          <View style={styles.contribColumnContent}>
+                            <ThemedText style={styles.memberContribution}>{member.contribution_percentage}</ThemedText>
+                            <ThemedText style={styles.memberRank}>#{member.rank}</ThemedText>
+                          </View>
+                        </Pressable>
+                      </View>
+                    );
+                  })}
+                  
+                  {searchQuery.trim() !== '' && filteredMembers.length === 0 && (
+                    <View style={styles.noResultsContainer}>
+                      <ThemedText style={styles.noResultsText}>
+                        No members found matching "{searchQuery}"
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+                
+                {searchQuery.trim() === '' && teamMembers.length > 5 && (
+                  <Pressable 
+                    onPress={() => setShowAllMembers(!showAllMembers)}
+                  >
+                    <ThemedText style={styles.seeAllMembers}>
+                      {showAllMembers ? 'SHOW LESS' : `SEE ALL MEMBERS (${teamMembers.length})`}
+                    </ThemedText>
+                  </Pressable>
+                )}
+              </ThemedView>
+            </View>
+          </ScrollView>
+        </>
+      )}
+      
+      <MemberDetails 
         isVisible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         member={selectedMember ? {
@@ -1264,4 +1258,450 @@ export default function TeamScreen() {
       </Modal>
     </View>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#333',
+  },
+  noTeamContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  noTeamTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  noTeamSubtext: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  joinButton: {
+    backgroundColor: '#C41E3A',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  joinButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  headerBackground: {
+    height: 300,
+  },
+  headerOverlay: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    zIndex: 1,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  userIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userIconText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#C41E3A',
+  },
+  headerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  pageTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  tagline: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+  },
+  mainContent: {
+    padding: 16,
+  },
+  scrollContent: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+    paddingBottom: 100, // Extra padding to account for tab bar
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  teamInfo: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    position: 'relative',
+    minHeight: 60,
+  },
+  teamIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    zIndex: 2,
+  },
+  teamIconText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  teamDetails: {
+    flex: 1,
+    marginLeft: 76,  // Account for avatar width + margin
+  },
+  teamName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: '#333333',
+  },
+  teamSubtext: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  progressContainer: {
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+    marginBottom: 8,
+  },
+  progressBar: {
+    position: 'absolute',
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginTop: 8,
+  },
+  teamActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 16,
+  },
+  actionButton: {
+    flex: 1,
+    padding: 8,
+    borderRadius: 20,
+    alignItems: 'center',
+    cursor: 'pointer',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    backgroundColor: 'transparent',
+  },
+  actionButtonHovered: {
+    backgroundColor: '#007AFF',
+  },
+  actionButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  actionButtonTextHovered: {
+    color: 'white',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 0,
+    color: '#333333',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statCard: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: '#333333',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  membersHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  searchInput: {
+    backgroundColor: '#F5F5F5',
+    padding: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: '#BDBDBD',
+    width: '50%',
+    maxWidth: 300,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  headerMember: {
+    flex: 3,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#444444',
+  },
+  headerRole: {
+    flex: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#444444',
+    textAlign: 'left',
+  },
+  headerMinutes: {
+    flex: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#444444',
+    textAlign: 'center',
+  },
+  headerContrib: {
+    flex: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#444444',
+    textAlign: 'right',
+  },
+  membersList: {
+    gap: 0,
+  },
+  memberItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+    minHeight: 64,
+    paddingLeft: 64,
+    marginBottom: 4,
+  },
+  memberItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    cursor: 'pointer',
+    marginLeft: 0,
+    borderRadius: 4,
+  },
+  memberItemAlt: {
+    backgroundColor: '#F8F9FA',
+  },
+  memberAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    position: 'absolute',
+    left: 16,
+    top: '50%',
+    transform: [{ translateY: -18 }],
+    zIndex: 3,
+  },
+  memberColumnContent: {
+    flex: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 8,
+  },
+  roleColumnContent: {
+    flex: 2,
+    alignItems: 'flex-start',
+  },
+  minutesColumnContent: {
+    flex: 2,
+    alignItems: 'center',
+  },
+  contribColumnContent: {
+    flex: 2,
+    alignItems: 'flex-end',
+  },
+  memberDetails: {
+    flex: 1,
+    marginLeft: 0,
+    gap: 1,
+  },
+  memberName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  memberRole: {
+    fontSize: 14,
+    color: '#666',
+  },
+  memberLastActive: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  memberMinutes: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  memberContribution: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  memberRank: {
+    fontSize: 12,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  seeAllMembers: {
+    textAlign: 'center',
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 16,
+  },
+  memberItemSearchResult: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#C41E3A',
+  },
+  
+  noResultsContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  
+  noResultsText: {
+    fontSize: 16,
+    color: '#666666',
+    fontStyle: 'italic',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 24,
+    width: '80%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: '#333',
+  },
+  goalInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f2f2f2',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontWeight: '600',
+  },
+  saveButton: {
+    backgroundColor: '#007AFF',
+  },
+  saveButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+}); 
