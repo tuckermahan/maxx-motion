@@ -201,44 +201,44 @@ export default function TeamScreen() {
         const results = allTeamMembers.filter(member => {
           const fullName = member.full_name.toLowerCase();
           const nameParts = fullName.split(' ');
-          
-          return fullName.includes(query) || 
-                 nameParts.some(part => part.includes(query));
+
+          return fullName.includes(query) ||
+            nameParts.some(part => part.includes(query));
         });
-        
+
         // Sort results by relevance
         results.sort((a, b) => {
           const aName = a.full_name.toLowerCase();
           const bName = b.full_name.toLowerCase();
-          
+
           // Exact matches first
           if (aName === query) return -1;
           if (bName === query) return 1;
-          
+
           // Then starts with
           if (aName.startsWith(query) && !bName.startsWith(query)) return -1;
           if (bName.startsWith(query) && !aName.startsWith(query)) return 1;
-          
+
           // Default to rank order
           return a.rank - b.rank;
         });
-        
+
         setFilteredMembers(results);
       }
     }, 300); // 300ms delay to debounce search input
-    
+
     return () => clearTimeout(debounceTimeout);
   }, [searchQuery, displayedMembers, allTeamMembers]);
 
   // Optimize memberRowStyles computation to use a stable reference
   const getMemberRowStyle = (memberId: string, index: number, isSearchResult: boolean) => {
     const isHovered = hoveredMemberId === memberId;
-    const backgroundColor = isHovered 
-      ? 'rgba(0, 0, 0, 0.15)' 
-      : index % 2 === 1 
-        ? 'rgba(0, 0, 0, 0.03)' 
+    const backgroundColor = isHovered
+      ? 'rgba(0, 0, 0, 0.15)'
+      : index % 2 === 1
+        ? 'rgba(0, 0, 0, 0.03)'
         : undefined;
-        
+
     return {
       backgroundColor,
       borderLeftWidth: isSearchResult && searchQuery.trim() !== '' ? 3 : 0,
@@ -268,21 +268,21 @@ export default function TeamScreen() {
           <LinearGradient
             colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
             locations={[0, 0.5]}
-            style={styles.gradientOverlay}
+            style={styles.headerOverlay}
           >
-            <View style={styles.headerTopBar}>
-              <Text style={styles.appTitle}>MAXX Motion</Text>
-              <View style={styles.logoContainer}>
-                <Text style={styles.logoText}>U</Text>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>MAXX Motion</Text>
+              <View style={styles.userIcon}>
+                <Text style={styles.userIconText}>U</Text>
               </View>
             </View>
             <View style={styles.headerContent}>
-              <Text style={styles.headerMainTitle}>Team</Text>
-              <Text style={styles.headerSubtitle}>Track your motion. Reach your potential.</Text>
+              <Text style={styles.pageTitle}>Team</Text>
+              <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
             </View>
           </LinearGradient>
         </ImageBackground>
-        
+
         <View style={styles.content}>
           <ThemedView style={styles.card}>
             <View style={styles.teamInfo}>
@@ -300,38 +300,38 @@ export default function TeamScreen() {
             </View>
 
             <View style={styles.teamActions}>
-              <Pressable 
-                style={[styles.actionButton, hoveredButton === 'rank' && styles.actionButtonHovered]} 
+              <Pressable
+                style={[styles.actionButton, hoveredButton === 'rank' && styles.actionButtonHovered]}
                 onHoverIn={() => setHoveredButton('rank')}
                 onHoverOut={() => setHoveredButton(null)}
               >
                 <ThemedText style={[
-                  styles.actionButtonText, 
+                  styles.actionButtonText,
                   hoveredButton === 'rank' && styles.actionButtonTextHovered
                 ]}>RANK: 2nd</ThemedText>
               </Pressable>
-              <Pressable 
-                style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]} 
+              <Pressable
+                style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]}
                 onHoverIn={() => setHoveredButton('edit')}
                 onHoverOut={() => setHoveredButton(null)}
               >
                 <ThemedText style={[
-                  styles.actionButtonText, 
+                  styles.actionButtonText,
                   hoveredButton === 'edit' && styles.actionButtonTextHovered
                 ]}>EDIT TEAM</ThemedText>
               </Pressable>
-              <Pressable 
-                style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]} 
+              <Pressable
+                style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]}
                 onHoverIn={() => setHoveredButton('invite')}
                 onHoverOut={() => setHoveredButton(null)}
               >
                 <ThemedText style={[
-                  styles.actionButtonText, 
+                  styles.actionButtonText,
                   hoveredButton === 'invite' && styles.actionButtonTextHovered
                 ]}>INVITE</ThemedText>
               </Pressable>
             </View>
-      </ThemedView>
+          </ThemedView>
 
           <ThemedView style={styles.card}>
             <ThemedText style={[styles.sectionTitle, { marginBottom: 16 }]}>Team Statistics</ThemedText>
@@ -349,13 +349,13 @@ export default function TeamScreen() {
                 <ThemedText style={styles.statLabel}>Weekly Growth</ThemedText>
               </View>
             </View>
-      </ThemedView>
+          </ThemedView>
 
           <ThemedView style={styles.card}>
             <View style={styles.membersHeader}>
               <ThemedText style={styles.sectionTitle}>Team Members</ThemedText>
-              <TextInput 
-                placeholder="Search members..." 
+              <TextInput
+                placeholder="Search members..."
                 style={styles.searchInput}
                 value={searchQuery}
                 onChangeText={handleSearch}
@@ -368,11 +368,11 @@ export default function TeamScreen() {
               <ThemedText style={styles.headerMinutes}>MINUTES</ThemedText>
               <ThemedText style={styles.headerContrib}>CONTRIB/RANK</ThemedText>
             </View>
-            
+
             <View style={styles.membersList}>
               {(searchQuery.trim() === '' ? displayedMembers : filteredMembers).map((member, index) => {
                 const isSearchResult = searchQuery.trim() !== '' && filteredMembers.includes(member);
-                
+
                 return (
                   <View key={member.id} style={styles.memberItemContainer}>
                     <Image
@@ -410,7 +410,7 @@ export default function TeamScreen() {
                   </View>
                 );
               })}
-              
+
               {searchQuery.trim() !== '' && filteredMembers.length === 0 && (
                 <View style={styles.noResultsContainer}>
                   <ThemedText style={styles.noResultsText}>
@@ -419,9 +419,9 @@ export default function TeamScreen() {
                 </View>
               )}
             </View>
-            
+
             {searchQuery.trim() === '' && (
-              <Pressable 
+              <Pressable
                 onPress={() => setShowAllMembers(!showAllMembers)}
               >
                 <ThemedText style={styles.seeAllMembers}>
@@ -429,11 +429,11 @@ export default function TeamScreen() {
                 </ThemedText>
               </Pressable>
             )}
-      </ThemedView>
+          </ThemedView>
         </View>
       </ScrollView>
-      
-      <MemberDetails 
+
+      <MemberDetails
         isVisible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         member={selectedMember ? {
@@ -457,58 +457,52 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   headerBackground: {
-    width: '100%',
-    height: 240,
-    resizeMode: 'cover',
+    height: 300,
   },
-  gradientOverlay: {
+  headerOverlay: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Add light overlay for better text visibility
   },
-  headerContent: {
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingBottom: 20,
-    alignItems: 'center',
-  },
-  headerTopBar: {
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
+    justifyContent: 'space-between',
+    padding: 16,
+    zIndex: 1,
   },
-  appTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
+  headerTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
   },
-  logoContainer: {
+  userIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userIconText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#C41E3A',
+  },
+  headerContent: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 40,
   },
-  logoText: {
-    fontSize: 16,
+  pageTitle: {
+    color: '#fff',
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#DC143C',
+    marginBottom: 8,
   },
-  headerMainTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
-    marginTop: 40,
-    textAlign: 'center',
-  },
-  headerSubtitle: {
+  tagline: {
+    color: '#fff',
     fontSize: 16,
-    color: 'white',
     opacity: 0.9,
-    textAlign: 'center',
   },
   content: {
     padding: 16,
@@ -781,12 +775,12 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: '#C41E3A',
   },
-  
+
   noResultsContainer: {
     padding: 20,
     alignItems: 'center',
   },
-  
+
   noResultsText: {
     fontSize: 16,
     color: '#666666',

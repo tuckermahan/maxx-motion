@@ -429,7 +429,7 @@ export default function AchievementsScreen() {
           </View>
           <View style={styles.headerContent}>
             <Text style={styles.pageTitle}>Achievements</Text>
-            <Text style={styles.tagline}>Challenge yourself. Earn rewards.</Text>
+            <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
           </View>
         </LinearGradient>
       </ImageBackground>
@@ -495,7 +495,7 @@ export default function AchievementsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F5F5',
     paddingTop: Constants.statusBarHeight,
   },
   headerBackground: {

@@ -453,7 +453,7 @@ function getOrdinal(n: number): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F5F5',
   },
   headerBackground: {
     height: 300,
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#F3E5F5',
+    backgroundColor: '#FFF5F5',
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -544,15 +544,15 @@ const styles = StyleSheet.create({
   challengeTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#9C27B0',
+    color: '#C41E3A',
   },
   challengeDates: {
     fontSize: 14,
-    color: '#9C27B0',
+    color: '#C41E3A',
     opacity: 0.8,
   },
   activeTag: {
-    backgroundColor: '#9C27B0',
+    backgroundColor: '#C41E3A',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
