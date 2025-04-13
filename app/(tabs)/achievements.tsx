@@ -7,6 +7,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
+import { ThemedText } from '@/components/ThemedText';
 
 const BADGE_SIZE = (Dimensions.get('window').width - 48) / 3;
 const BADGE_PADDING = 6;
@@ -661,14 +662,11 @@ export default function AchievementsScreen() {
           locations={[0, 0.5]}
         >
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>MAXX Motion</Text>
-            <View style={styles.userIcon}>
-              <Text style={styles.userIconText}>U</Text>
-            </View>
+            <ThemedText style={styles.headerTitle}>MAXX Motion</ThemedText>
           </View>
           <View style={styles.headerContent}>
-            <Text style={styles.pageTitle}>Achievements</Text>
-            <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
+            <ThemedText style={styles.pageTitle}>Achievements</ThemedText>
+            <ThemedText style={styles.tagline}>Challenge yourself. Earn rewards.</ThemedText>
           </View>
         </LinearGradient>
       </ImageBackground>
@@ -754,7 +752,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     padding: 16,
     zIndex: 1,
   },
@@ -762,19 +760,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 20,
     fontWeight: '600',
-  },
-  userIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  userIconText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#C41E3A',
   },
   headerContent: {
     flex: 1,
