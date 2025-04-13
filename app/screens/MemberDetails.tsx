@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Pressable, Modal } from 'react-native';
+import { StyleSheet, View, Pressable, Modal, Image } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -47,9 +47,16 @@ export default function MemberDetails({ isVisible, onClose, member }: MemberDeta
           <ThemedView style={styles.content}>
             <View style={styles.memberHeader}>
               <View style={styles.avatar}>
-                <ThemedText style={styles.avatarText}>
-                  {member.full_name.split(' ').map(n => n[0]).join('')}
-                </ThemedText>
+                {member.avatar_url ? (
+                  <Image 
+                    source={{ uri: member.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.full_name)}&background=random` }} 
+                    style={styles.avatarImage} 
+                  />
+                ) : (
+                  <ThemedText style={styles.avatarText}>
+                    {member.full_name.split(' ').map(n => n[0]).join('')}
+                  </ThemedText>
+                )}
               </View>
               <View style={styles.memberInfo}>
                 <ThemedText style={styles.memberName}>{member.full_name}</ThemedText>
@@ -157,6 +164,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   avatarText: {
     color: 'white',
