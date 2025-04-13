@@ -49,18 +49,16 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: colorScheme === 'dark' ? '#ffffff' : '#0a7ea4',
         tabBarInactiveTintColor: colorScheme === 'dark' ? '#888888' : '#888888',
-        tabBarShowLabel: true,
         tabBarStyle: {
-          borderTopWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
+          height: 60,
         },
-        tabBarItemStyle: {
-          borderTopWidth: 0,
+        tabBarIconStyle: {
+          marginBottom: 0,
         },
-        tabBarActiveBackgroundColor: 'transparent',
-        tabBarInactiveBackgroundColor: 'transparent',
-        tabBarIcon: () => null,
+        tabBarLabelStyle: {
+          fontSize: 15,
+          fontWeight: '500',
+        },
       }}>
       <Tabs.Screen
         name="index"
@@ -78,6 +76,8 @@ export default function TabLayout() {
         name="team"
         options={{
           title: 'Team',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <IconSymbol name="person.3.fill" color={color} />,
         }}
       />
       <Tabs.Screen
