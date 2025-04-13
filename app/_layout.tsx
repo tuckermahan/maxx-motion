@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { UserProvider } from '../contexts/UserContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -100,15 +101,18 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
-        <Stack.Screen name="join-event" options={{ title: "Join Event", headerLeft: () => null }} />
-        <Stack.Screen name="join-team" options={{ title: "Join Team", headerLeft: () => null }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-      <StatusBar style="auto" />
+      <UserProvider>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
+          <Stack.Screen name="join-event" options={{ title: "Join Event", headerLeft: () => null }} />
+          <Stack.Screen name="join-team" options={{ title: "Join Team", headerLeft: () => null }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="admin" options={{ headerShown: true }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </UserProvider>
     </ThemeProvider>
   );
 }
