@@ -500,7 +500,14 @@ export default function AchievementsScreen() {
           locations={[0, 0.5]}
         >
           <View style={styles.header}>
-            <Text style={styles.pageTitle}>MAXX Motion</Text>
+            <Text style={styles.headerTitle}>MAXX Motion</Text>
+            <View style={styles.userIcon}>
+              <Text style={styles.userIconText}>U</Text>
+            </View>
+          </View>
+          <View style={styles.headerContent}>
+            <Text style={styles.pageTitle}>Achievements</Text>
+            <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
             <TouchableOpacity onPress={() => router.push('/profile')}>
               <FontAwesome5 name="user-circle" size={24} color="#fff" />
             </TouchableOpacity>
@@ -579,7 +586,7 @@ export default function AchievementsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F5F5',
     paddingTop: Constants.statusBarHeight,
   },
   headerBackground: {

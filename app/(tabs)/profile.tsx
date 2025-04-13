@@ -39,7 +39,7 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     try {
       setLoading(true);
-      
+
       // Force navigation to home page before signing out
       setTimeout(() => {
         // Navigate using window.location for a full reset of the app state
@@ -50,10 +50,10 @@ export default function ProfileScreen() {
           router.replace('/');
         }
       }, 100);
-      
+
       // Sign out
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
         Alert.alert('Error', error.message);
       }
@@ -103,7 +103,7 @@ export default function ProfileScreen() {
       <View style={styles.eventHeader}>
         <ThemedText style={styles.eventTitle}>{event.name}</ThemedText>
         <View style={[
-          styles.eventStatusBadge, 
+          styles.eventStatusBadge,
           event.status === 'Active' ? styles.activeEventBadge : styles.upcomingEventBadge
         ]}>
           <ThemedText style={styles.eventStatusText}>{event.status}</ThemedText>
@@ -203,7 +203,7 @@ export default function ProfileScreen() {
               <View style={styles.sectionHeader}>
                 <ThemedText style={styles.sectionTitle}>Activity History</ThemedText>
               </View>
-              
+
               {userProfile.activities.map(activity => (
                 <ActivityCard key={activity.id} activity={activity} />
               ))}
@@ -215,7 +215,7 @@ export default function ProfileScreen() {
               <View style={styles.sectionHeader}>
                 <ThemedText style={styles.sectionTitle}>My Teams</ThemedText>
               </View>
-              
+
               {userProfile.teams.map(team => (
                 <TeamCard key={team.id} team={team} />
               ))}
@@ -227,7 +227,7 @@ export default function ProfileScreen() {
               <View style={styles.sectionHeader}>
                 <ThemedText style={styles.sectionTitle}>Events</ThemedText>
               </View>
-              
+
               {userProfile.events.map(event => (
                 <EventCard key={event.id} event={event} />
               ))}
@@ -236,8 +236,8 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.logoutContainer}>
-          <TouchableOpacity 
-            style={styles.logoutButton} 
+          <TouchableOpacity
+            style={styles.logoutButton}
             onPress={handleLogout}
             disabled={loading}
           >
@@ -262,56 +262,52 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   headerBackground: {
-    width: '100%',
-    height: 220,
+    height: 300,
   },
   headerOverlay: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingHorizontal: 16,
-    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
-    marginBottom: 40,
+    justifyContent: 'space-between',
+    padding: 16,
+    zIndex: 1,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
   },
   userIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'white',
-    justifyContent: 'center',
+    backgroundColor: '#fff',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   userIconText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#C41E3A',
   },
   headerContent: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    paddingVertical: 40,
   },
   pageTitle: {
-    fontSize: 32,
+    color: '#fff',
+    fontSize: 28,
     fontWeight: 'bold',
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   tagline: {
+    color: '#fff',
     fontSize: 16,
-    color: 'white',
     opacity: 0.9,
-    textAlign: 'center',
   },
   profileCard: {
     backgroundColor: 'white',

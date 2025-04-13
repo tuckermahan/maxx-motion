@@ -51,8 +51,8 @@ type RootStackParamList = {
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 // Review Activities component
-function ActivityReview({ refreshTrigger, onRefreshComplete, onEditActivity }: { 
-  refreshTrigger: number, 
+function ActivityReview({ refreshTrigger, onRefreshComplete, onEditActivity }: {
+  refreshTrigger: number,
   onRefreshComplete: () => void,
   onEditActivity: (activity: UserActivity) => void
 }) {
@@ -60,7 +60,7 @@ function ActivityReview({ refreshTrigger, onRefreshComplete, onEditActivity }: {
   const [activities, setActivities] = useState<UserActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activityTypes, setActivityTypes] = useState<{[key: string]: ActivityType}>({});
+  const [activityTypes, setActivityTypes] = useState<{ [key: string]: ActivityType }>({});
 
   useEffect(() => {
     fetchUserActivities();
@@ -72,16 +72,16 @@ function ActivityReview({ refreshTrigger, onRefreshComplete, onEditActivity }: {
       const { data, error } = await supabase
         .from('activity_types')
         .select('*');
-      
+
       if (error) throw error;
-      
-      const typeMap: {[key: string]: ActivityType} = {};
+
+      const typeMap: { [key: string]: ActivityType } = {};
       if (data) {
         data.forEach(type => {
           typeMap[type.id] = type;
         });
       }
-      
+
       setActivityTypes(typeMap);
     } catch (err) {
       console.error('Error fetching activity types:', err);
@@ -90,10 +90,10 @@ function ActivityReview({ refreshTrigger, onRefreshComplete, onEditActivity }: {
 
   const fetchUserActivities = async () => {
     if (!user) return;
-    
+
     try {
       setLoading(true);
-      
+
       const { data, error } = await supabase
         .from('activities')
         .select(`
@@ -104,9 +104,9 @@ function ActivityReview({ refreshTrigger, onRefreshComplete, onEditActivity }: {
         `)
         .eq('user_id', user.id)
         .order('activity_date', { ascending: false });
-      
+
       if (error) throw error;
-      
+
       // Add emoji to each activity based on type
       const activitiesWithEmoji = data?.map(activity => {
         const activityType = activityTypes[activity.activity_type_linked];
@@ -115,7 +115,7 @@ function ActivityReview({ refreshTrigger, onRefreshComplete, onEditActivity }: {
           activity_type_emoji: activityType?.type_emoji || '🏃‍♂️'
         };
       }) || [];
-      
+
       setActivities(activitiesWithEmoji);
       onRefreshComplete();
     } catch (err) {
@@ -142,9 +142,9 @@ function ActivityReview({ refreshTrigger, onRefreshComplete, onEditActivity }: {
     return (
       <View style={styles.centeredContent}>
         <Text style={styles.errorText}>{error}</Text>
-        <Button 
-          label="Try Again" 
-          onPress={fetchUserActivities} 
+        <Button
+          label="Try Again"
+          onPress={fetchUserActivities}
           variant="primary"
           style={{ marginTop: 16 }}
         />
@@ -164,8 +164,8 @@ function ActivityReview({ refreshTrigger, onRefreshComplete, onEditActivity }: {
   return (
     <ScrollView style={styles.reviewContainer}>
       {activities.map(activity => (
-        <TouchableOpacity 
-          key={activity.id} 
+        <TouchableOpacity
+          key={activity.id}
           style={styles.activityItem}
           onPress={() => onEditActivity(activity)}
         >
@@ -197,38 +197,38 @@ function ActivityReview({ refreshTrigger, onRefreshComplete, onEditActivity }: {
 export default function Activity() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuth();
-  
+
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
   const [upcomingEvent, setUpcomingEvent] = useState<Event | null>(null);
   const [hasActivities, setHasActivities] = useState(false);
-  
+
   // Toast notification
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastOpacity] = useState(new Animated.Value(0));
-  
+
   // State for refreshing the activities list
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
   // Activity editing
   const [editActivityModalVisible, setEditActivityModalVisible] = useState(false);
   const [currentEditActivity, setCurrentEditActivity] = useState<UserActivity | null>(null);
-  
+
   useEffect(() => {
     fetchActivityTypes();
     fetchEvents();
   }, []);
-  
+
   useEffect(() => {
     if (user && currentEvent) {
       checkUserActivities();
     }
   }, [user, currentEvent]);
-  
+
   // Toast animation
   useEffect(() => {
     if (showToast) {
@@ -261,7 +261,7 @@ export default function Activity() {
       const { data, error } = await supabase
         .from('activity_types')
         .select('*');
-      
+
       if (error) throw error;
       setActivityTypes(data || []);
     } catch (err) {
@@ -276,7 +276,7 @@ export default function Activity() {
     try {
       // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
-      
+
       // Fetch current active event
       const { data: currentData, error: currentError } = await supabase
         .from('events')
@@ -285,9 +285,9 @@ export default function Activity() {
         .gte('end_date', today)
         .order('start_date', { ascending: false })
         .limit(1);
-      
+
       if (currentError) throw currentError;
-      
+
       if (currentData && currentData.length > 0) {
         setCurrentEvent(currentData[0]);
       } else {
@@ -298,9 +298,9 @@ export default function Activity() {
           .gt('start_date', today)
           .order('start_date', { ascending: true })
           .limit(1);
-        
+
         if (upcomingError) throw upcomingError;
-        
+
         if (upcomingData && upcomingData.length > 0) {
           setUpcomingEvent(upcomingData[0]);
         }
@@ -309,10 +309,10 @@ export default function Activity() {
       console.error('Error fetching events:', err);
     }
   };
-  
+
   const checkUserActivities = async () => {
     if (!user || !currentEvent) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('activities')
@@ -320,15 +320,15 @@ export default function Activity() {
         .eq('user_id', user.id)
         .eq('event_id', currentEvent.id)
         .limit(1);
-        
+
       if (error) throw error;
-      
+
       setHasActivities(data && data.length > 0);
     } catch (err) {
       console.error('Error checking user activities:', err);
     }
   };
-  
+
   const navigateToWorkout = (categoryId: string, typeName: string, typeEmoji: string) => {
     // Instead of navigating to a detail page, open the manual entry modal with this activity type
     setManualEntry({
@@ -410,7 +410,7 @@ export default function Activity() {
 
       if (error) throw error;
       setManualEntryModalVisible(false);
-      
+
       // Reset form
       setManualEntry({
         activity_type: '',
@@ -420,15 +420,15 @@ export default function Activity() {
         activity_date: new Date(),
         activity_source: 'manual'
       });
-      
+
       // Show success message
       showSuccessToast(`${manualEntry.activity_minutes} minutes of ${manualEntry.activity_type} logged!`);
-      
+
       // Update hasActivities flag if this was for the current event
       if (currentEvent && eventId === currentEvent.id) {
         setHasActivities(true);
       }
-      
+
       // Trigger refresh of activities list
       setRefreshTrigger(prev => prev + 1);
     } catch (error: any) {
@@ -436,11 +436,11 @@ export default function Activity() {
       Alert.alert('Error', error.message || 'Failed to log activity');
     }
   };
-  
+
   // Function to handle activity edit
   const handleEditActivity = (activity: UserActivity) => {
     setCurrentEditActivity(activity);
-    
+
     // Populate the entry form with existing data
     setManualEntry({
       activity_type: activity.activity_type,
@@ -450,20 +450,20 @@ export default function Activity() {
       activity_date: new Date(activity.activity_date),
       activity_source: activity.activity_source
     });
-    
+
     setEditActivityModalVisible(true);
   };
-  
+
   // Function to update an existing activity
   const handleUpdateActivity = async () => {
     if (!currentEditActivity || !user) return;
-    
+
     try {
       if (!manualEntry.activity_type || !manualEntry.activity_minutes) {
         Alert.alert('Error', 'Please fill all required fields');
         return;
       }
-      
+
       const { error } = await supabase
         .from('activities')
         .update({
@@ -474,11 +474,11 @@ export default function Activity() {
         })
         .eq('id', currentEditActivity.id)
         .eq('user_id', user.id); // Additional safety check
-      
+
       if (error) throw error;
-      
+
       setEditActivityModalVisible(false);
-      
+
       // Reset state
       setCurrentEditActivity(null);
       setManualEntry({
@@ -489,10 +489,10 @@ export default function Activity() {
         activity_date: new Date(),
         activity_source: 'manual'
       });
-      
+
       // Show success message
       showSuccessToast('Activity updated successfully!');
-      
+
       // Trigger refresh of activities list
       setRefreshTrigger(prev => prev + 1);
     } catch (error: any) {
@@ -500,11 +500,11 @@ export default function Activity() {
       Alert.alert('Error', error.message || 'Failed to update activity');
     }
   };
-  
+
   // Function to delete an activity
   const handleDeleteActivity = async () => {
     if (!currentEditActivity || !user) return;
-    
+
     // Confirmation dialog
     Alert.alert(
       'Delete Activity',
@@ -524,11 +524,11 @@ export default function Activity() {
                 .delete()
                 .eq('id', currentEditActivity.id)
                 .eq('user_id', user.id); // Additional safety check
-              
+
               if (error) throw error;
-              
+
               setEditActivityModalVisible(false);
-              
+
               // Reset state
               setCurrentEditActivity(null);
               setManualEntry({
@@ -539,10 +539,10 @@ export default function Activity() {
                 activity_date: new Date(),
                 activity_source: 'manual'
               });
-              
+
               // Show success message
               showSuccessToast('Activity deleted successfully');
-              
+
               // Trigger refresh of activities list
               setRefreshTrigger(prev => prev + 1);
             } catch (error: any) {
@@ -569,7 +569,7 @@ export default function Activity() {
             const date = new Date(dateStr);
             if (!isNaN(date.getTime())) {
               setManualEntry({
-                ...manualEntry, 
+                ...manualEntry,
                 activity_date: date
               });
             }
@@ -581,7 +581,7 @@ export default function Activity() {
       return (
         <Button
           label={manualEntry.activity_date.toLocaleDateString()}
-          onPress={() => {/* Show native date picker */}}
+          onPress={() => {/* Show native date picker */ }}
           variant="secondary"
         />
       );
@@ -605,7 +605,7 @@ export default function Activity() {
           </View>
         );
       }
-      
+
       // User has activities for current event, show regular event banner
       return (
         <View style={styles.challengeCard}>
@@ -724,16 +724,16 @@ export default function Activity() {
               <Text style={styles.actionButtonText}>Manual Entry</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Add By Activity Type</Text>
           </View>
-          
+
           <ScrollView style={styles.content}>
             {loading ? (
-              <Text style={{padding: 20, textAlign: 'center'}}>Loading activity types...</Text>
+              <Text style={{ padding: 20, textAlign: 'center' }}>Loading activity types...</Text>
             ) : error ? (
-              <Text style={{padding: 20, textAlign: 'center', color: 'red'}}>{error}</Text>
+              <Text style={{ padding: 20, textAlign: 'center', color: 'red' }}>{error}</Text>
             ) : (
               activityTypes.map((type) => (
                 <TouchableOpacity
@@ -755,8 +755,8 @@ export default function Activity() {
 
       {/* Review Activities Tab Content */}
       {activeTab === 'review' && (
-        <ActivityReview 
-          refreshTrigger={refreshTrigger} 
+        <ActivityReview
+          refreshTrigger={refreshTrigger}
           onRefreshComplete={() => setIsRefreshing(false)}
           onEditActivity={handleEditActivity}
         />
@@ -814,17 +814,17 @@ export default function Activity() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <ThemedText style={styles.modalTitle}>
-              {manualEntry.activity_type 
-                ? `Log ${manualEntry.activity_type} Activity` 
+              {manualEntry.activity_type
+                ? `Log ${manualEntry.activity_type} Activity`
                 : 'Manual Activity Entry'}
             </ThemedText>
-            
+
             {/* Activity Type Display/Selector */}
             {manualEntry.activity_type ? (
               <View style={styles.selectedActivityType}>
                 <Text style={styles.selectedActivityEmoji}>{manualEntry.activity_type_emoji}</Text>
                 <Text style={styles.selectedActivityName}>{manualEntry.activity_type}</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.changeButton}
                   onPress={() => setActivityTypeModalVisible(true)}
                 >
@@ -841,17 +841,17 @@ export default function Activity() {
                 </Text>
               </Pressable>
             )}
-            
+
             <TextInput
               style={styles.input}
               placeholder="Duration (minutes)"
               keyboardType="numeric"
               value={manualEntry.activity_minutes}
-              onChangeText={(text) => setManualEntry({...manualEntry, activity_minutes: text})}
+              onChangeText={(text) => setManualEntry({ ...manualEntry, activity_minutes: text })}
             />
-            
+
             <DateInput />
-            
+
             <View style={styles.buttonContainer}>
               <Button
                 label="Submit"
@@ -903,7 +903,7 @@ export default function Activity() {
           </View>
         </View>
       </Modal>
-      
+
       {/* Edit Activity Modal */}
       <Modal
         animationType="slide"
@@ -916,13 +916,13 @@ export default function Activity() {
             <ThemedText style={styles.modalTitle}>
               Edit Activity
             </ThemedText>
-            
+
             {/* Activity Type Display/Selector */}
             {manualEntry.activity_type ? (
               <View style={styles.selectedActivityType}>
                 <Text style={styles.selectedActivityEmoji}>{manualEntry.activity_type_emoji}</Text>
                 <Text style={styles.selectedActivityName}>{manualEntry.activity_type}</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.changeButton}
                   onPress={() => setActivityTypeModalVisible(true)}
                 >
@@ -939,17 +939,17 @@ export default function Activity() {
                 </Text>
               </Pressable>
             )}
-            
+
             <TextInput
               style={styles.input}
               placeholder="Duration (minutes)"
               keyboardType="numeric"
               value={manualEntry.activity_minutes}
-              onChangeText={(text) => setManualEntry({...manualEntry, activity_minutes: text})}
+              onChangeText={(text) => setManualEntry({ ...manualEntry, activity_minutes: text })}
             />
-            
+
             <DateInput />
-            
+
             <View style={styles.buttonContainer}>
               <Button
                 label="Update"
@@ -979,7 +979,7 @@ export default function Activity() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F5F5',
   },
   headerBackground: {
     height: 300,
@@ -1151,6 +1151,15 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   categoryIconContainer: {
     width: 40,

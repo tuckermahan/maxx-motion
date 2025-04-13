@@ -119,32 +119,32 @@ export default function TeamScreen() {
         const results = teamMembers.filter(member => {
           const fullName = member.full_name.toLowerCase();
           const nameParts = fullName.split(' ');
-          
-          return fullName.includes(query) || 
-                 nameParts.some(part => part.includes(query));
+
+          return fullName.includes(query) ||
+            nameParts.some(part => part.includes(query));
         });
-        
+
         // Sort results by relevance
         results.sort((a, b) => {
           const aName = a.full_name.toLowerCase();
           const bName = b.full_name.toLowerCase();
-          
+
           // Exact matches first
           if (aName === query) return -1;
           if (bName === query) return 1;
-          
+
           // Then starts with
           if (aName.startsWith(query) && !bName.startsWith(query)) return -1;
           if (bName.startsWith(query) && !aName.startsWith(query)) return 1;
-          
+
           // Default to rank order
           return a.rank - b.rank;
         });
-        
+
         setFilteredMembers(results);
       }
     }, 300); // 300ms delay to debounce search input
-    
+
     return () => clearTimeout(debounceTimeout);
   }, [searchQuery, teamMembers]);
 
@@ -496,12 +496,12 @@ export default function TeamScreen() {
   // Optimize memberRowStyles computation to use a stable reference
   const getMemberRowStyle = (memberId: string, index: number, isSearchResult: boolean) => {
     const isHovered = hoveredMemberId === memberId;
-    const backgroundColor = isHovered 
-      ? 'rgba(0, 0, 0, 0.15)' 
-      : index % 2 === 1 
-        ? 'rgba(0, 0, 0, 0.03)' 
+    const backgroundColor = isHovered
+      ? 'rgba(0, 0, 0, 0.15)'
+      : index % 2 === 1
+        ? 'rgba(0, 0, 0, 0.03)'
         : undefined;
-        
+
     return {
       backgroundColor,
       borderLeftWidth: isSearchResult && searchQuery.trim() !== '' ? 3 : 0,
@@ -625,9 +625,77 @@ export default function TeamScreen() {
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <ScrollView>
+  // Show goal edit modal
+  const showGoalEditModal = () => {
+    setNewGoalValue(userTeam?.team_minute_goal.toString() || '10000');
+    setGoalEditModalVisible(true);
+  };
+  
+  // Handle edit team goal
+  const handleEditTeamGoal = async () => {
+    if (!userTeam) return;
+    
+    setGoalEditModalVisible(false);
+    
+    // Validate input
+    const goalValue = parseInt(newGoalValue);
+    if (isNaN(goalValue) || goalValue <= 0) {
+      Alert.alert('Invalid Value', 'Please enter a positive number for the team goal');
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .update({ team_minute_goal: goalValue })
+        .eq('id', userTeam.id);
+      
+      if (error) {
+        console.error('Error updating team goal:', error);
+        return;
+      }
+      
+      // Update local state
+      setUserTeam({
+        ...userTeam,
+        team_minute_goal: goalValue
+      });
+      
+      // Update team stats
+      setTeamStats({
+        ...teamStats,
+        targetMinutes: goalValue
+      });
+    } catch (err) {
+      console.error('Error updating team goal:', err);
+    }
+  };
+
+  // Navigate to join event/team page
+  const navigateToJoinEvent = () => {
+    router.push('/join-event');
+  };
+
+  const displayedMembers = showAllMembers ? teamMembers : teamMembers.slice(0, 5);
+  
+  // Calculate progress percentage
+  const progressPercentage = userTeam && teamStats.targetMinutes > 0
+    ? Math.min(100, (teamStats.totalMinutes / teamStats.targetMinutes) * 100)
+    : 0;
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#C41E3A" />
+        <Text style={styles.loadingText}>Loading team data...</Text>
+      </View>
+    );
+  }
+
+  if (!userTeam) {
+    // User is not part of any team - show button to join
+    return (
+      <View style={styles.container}>
         <ImageBackground
           source={require('@/assets/images/gym-equipment.png')}
           style={styles.headerBackground}
@@ -674,39 +742,39 @@ export default function TeamScreen() {
             </View>
 
             <View style={styles.teamActions}>
-              <Pressable 
-                style={[styles.actionButton, hoveredButton === 'rank' && styles.actionButtonHovered]} 
+              <Pressable
+                style={[styles.actionButton, hoveredButton === 'rank' && styles.actionButtonHovered]}
                 onHoverIn={() => setHoveredButton('rank')}
                 onHoverOut={() => setHoveredButton(null)}
               >
                 <ThemedText style={[
-                  styles.actionButtonText, 
+                  styles.actionButtonText,
                   hoveredButton === 'rank' && styles.actionButtonTextHovered
                 ]}>RANK: {teamRank ? `${teamRank}${teamRank === 1 ? 'st' : teamRank === 2 ? 'nd' : teamRank === 3 ? 'rd' : 'th'}` : '...'}</ThemedText>
               </Pressable>
-              <Pressable 
-                style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]} 
+              <Pressable
+                style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]}
                 onHoverIn={() => setHoveredButton('edit')}
                 onHoverOut={() => setHoveredButton(null)}
                 onPress={showGoalEditModal}
               >
                 <ThemedText style={[
-                  styles.actionButtonText, 
+                  styles.actionButtonText,
                   hoveredButton === 'edit' && styles.actionButtonTextHovered
                 ]}>EDIT GOAL</ThemedText>
               </Pressable>
-              <Pressable 
-                style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]} 
+              <Pressable
+                style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]}
                 onHoverIn={() => setHoveredButton('invite')}
                 onHoverOut={() => setHoveredButton(null)}
               >
                 <ThemedText style={[
-                  styles.actionButtonText, 
+                  styles.actionButtonText,
                   hoveredButton === 'invite' && styles.actionButtonTextHovered
                 ]}>INVITE</ThemedText>
               </Pressable>
             </View>
-      </ThemedView>
+          </ThemedView>
 
           <ThemedView style={styles.card}>
             <ThemedText style={[styles.sectionTitle, { marginBottom: 16 }]}>Team Statistics</ThemedText>
@@ -724,13 +792,13 @@ export default function TeamScreen() {
                 <ThemedText style={styles.statLabel}>Weekly Growth</ThemedText>
               </View>
             </View>
-      </ThemedView>
+          </ThemedView>
 
           <ThemedView style={styles.card}>
             <View style={styles.membersHeader}>
               <ThemedText style={styles.sectionTitle}>Team Members</ThemedText>
-              <TextInput 
-                placeholder="Search members..." 
+              <TextInput
+                placeholder="Search members..."
                 style={styles.searchInput}
                 value={searchQuery}
                 onChangeText={handleSearch}
@@ -743,11 +811,11 @@ export default function TeamScreen() {
               <ThemedText style={styles.headerMinutes}>MINUTES</ThemedText>
               <ThemedText style={styles.headerContrib}>CONTRIB/RANK</ThemedText>
             </View>
-            
+
             <View style={styles.membersList}>
               {(searchQuery.trim() === '' ? displayedMembers : filteredMembers).map((member, index) => {
                 const isSearchResult = searchQuery.trim() !== '' && filteredMembers.includes(member);
-                
+
                 return (
                   <View key={member.id} style={styles.memberItemContainer}>
                     <Image
@@ -785,7 +853,7 @@ export default function TeamScreen() {
                   </View>
                 );
               })}
-              
+
               {searchQuery.trim() !== '' && filteredMembers.length === 0 && (
                 <View style={styles.noResultsContainer}>
                   <ThemedText style={styles.noResultsText}>
@@ -804,11 +872,11 @@ export default function TeamScreen() {
                 </ThemedText>
               </Pressable>
             )}
-      </ThemedView>
+          </ThemedView>
         </View>
       </ScrollView>
-      
-      <MemberDetails 
+
+      <MemberDetails
         isVisible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         member={selectedMember ? {
@@ -929,12 +997,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  appTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
+  headerTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
   },
-  logoContainer: {
+  userIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -942,23 +1010,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoText: {
+  userIconText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#DC143C',
+    fontWeight: '600',
+    color: '#C41E3A',
   },
-  headerMainTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
-    marginTop: 40,
-    textAlign: 'center',
+  headerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
   },
-  headerSubtitle: {
+  pageTitle: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  tagline: {
+    color: '#fff',
     fontSize: 16,
-    color: 'white',
     opacity: 0.9,
-    textAlign: 'center',
   },
   content: {
     padding: 16,
@@ -1231,12 +1303,12 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: '#C41E3A',
   },
-  
+
   noResultsContainer: {
     padding: 20,
     alignItems: 'center',
   },
-  
+
   noResultsText: {
     fontSize: 16,
     color: '#666666',
