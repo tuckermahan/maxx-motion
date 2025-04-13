@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Image, Pressable, Platform, ImageBackground, Text } from 'react-native';
+import { StyleSheet, View, TextInput, Image, Pressable, Platform, ImageBackground, Text, ActivityIndicator, TouchableOpacity, Modal, Alert } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -22,8 +24,44 @@ type TeamMember = {
   rank: number; // calculated
 };
 
+type Team = {
+  id: string;
+  team_name: string;
+  team_minute_goal: number;
+  captain_id: string;
+  event_id: string;
+};
+
+type Event = {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  status: 'Upcoming' | 'Active' | 'Archive';
+};
+
+// Type for the nested data structure returned by the team members query
+type TeamMembershipQueryResult = {
+  team_id: string;
+  teams: {
+    id: string;
+    team_name: string;
+    team_minute_goal: number;
+    captain_id: string;
+    event_id: string;
+    events: {
+      id: string;
+      name: string;
+      start_date: string;
+      end_date: string;
+      status: 'Upcoming' | 'Active' | 'Archive';
+    }
+  }
+};
+
 export default function TeamScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const [showAllMembers, setShowAllMembers] = useState(false);
@@ -31,174 +69,54 @@ export default function TeamScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredMembers, setFilteredMembers] = useState<TeamMember[]>([]);
+  
+  // New state variables for database data
+  const [loading, setLoading] = useState(true);
+  const [userTeam, setUserTeam] = useState<Team | null>(null);
+  const [userEvent, setUserEvent] = useState<Event | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamRank, setTeamRank] = useState<number | null>(null);
+  const [totalTeamMinutes, setTotalTeamMinutes] = useState<number>(0);
+  const [teamStats, setTeamStats] = useState({
+    totalMinutes: 0,
+    targetMinutes: 0,
+    activeMembers: 0,
+    weeklyGrowth: 0,
+    avgMinPerMember: 0,
+  });
+  const [goalEditModalVisible, setGoalEditModalVisible] = useState(false);
+  const [newGoalValue, setNewGoalValue] = useState('');
 
-  const teamStats = {
-    totalMinutes: 2650,
-    targetMinutes: 10000,
-    activeMembers: 10,
-    weeklyGrowth: 15,
-    avgMinPerMember: 220,
-  };
+  // Fetch user's team from active or upcoming event
+  useEffect(() => {
+    if (user) {
+      fetchUserTeamAndEvent();
+    }
+  }, [user]);
 
-  const allTeamMembers: TeamMember[] = [
-    {
-      id: '123e4567-e89b-12d3-a456-426614174000',
-      user_id: '123e4567-e89b-12d3-a456-426614174001',
-      team_id: '123e4567-e89b-12d3-a456-426614174002',
-      full_name: 'Jane Doe',
-      avatar_url: 'https://ui-avatars.com/api/?name=JD&background=FF4785',
-      joined_at: '2024-04-02T00:00:00Z',
-      is_captain: true,
-      total_minutes: 385,
-      contribution_percentage: '16.4%',
-      rank: 1,
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174003',
-      user_id: '123e4567-e89b-12d3-a456-426614174004',
-      team_id: '123e4567-e89b-12d3-a456-426614174002',
-      full_name: 'You',
-      avatar_url: 'https://ui-avatars.com/api/?name=YO&background=4CAF50',
-      joined_at: '2024-04-01T00:00:00Z',
-      is_captain: false,
-      total_minutes: 310,
-      contribution_percentage: '11.7%',
-      rank: 2,
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174005',
-      user_id: '123e4567-e89b-12d3-a456-426614174006',
-      team_id: '123e4567-e89b-12d3-a456-426614174002',
-      full_name: 'John Smith',
-      avatar_url: 'https://ui-avatars.com/api/?name=JS&background=9C27B0',
-      joined_at: '2024-04-03T00:00:00Z',
-      is_captain: false,
-      total_minutes: 275,
-      contribution_percentage: '10.4%',
-      rank: 3,
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174007',
-      user_id: '123e4567-e89b-12d3-a456-426614174008',
-      team_id: '123e4567-e89b-12d3-a456-426614174002',
-      full_name: 'Amy Johnson',
-      avatar_url: 'https://ui-avatars.com/api/?name=AJ&background=FF9800',
-      joined_at: '2024-04-02T00:00:00Z',
-      is_captain: false,
-      total_minutes: 250,
-      contribution_percentage: '9.5%',
-      rank: 4,
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174009',
-      user_id: '123e4567-e89b-12d3-a456-426614174010',
-      team_id: '123e4567-e89b-12d3-a456-426614174002',
-      full_name: 'David Park',
-      avatar_url: 'https://ui-avatars.com/api/?name=DP&background=03A9F4',
-      joined_at: '2024-04-05T00:00:00Z',
-      is_captain: false,
-      total_minutes: 210,
-      contribution_percentage: '7.9%',
-      rank: 5,
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174011',
-      user_id: '123e4567-e89b-12d3-a456-426614174012',
-      team_id: '123e4567-e89b-12d3-a456-426614174002',
-      full_name: 'Sarah Wilson',
-      avatar_url: 'https://ui-avatars.com/api/?name=SW&background=E91E63',
-      joined_at: '2024-04-03T00:00:00Z',
-      is_captain: false,
-      total_minutes: 190,
-      contribution_percentage: '7.2%',
-      rank: 6,
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174013',
-      user_id: '123e4567-e89b-12d3-a456-426614174014',
-      team_id: '123e4567-e89b-12d3-a456-426614174002',
-      full_name: 'Michael Chen',
-      avatar_url: 'https://ui-avatars.com/api/?name=MC&background=673AB7',
-      joined_at: '2024-04-04T00:00:00Z',
-      is_captain: false,
-      total_minutes: 175,
-      contribution_percentage: '6.6%',
-      rank: 7,
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174015',
-      user_id: '123e4567-e89b-12d3-a456-426614174016',
-      team_id: '123e4567-e89b-12d3-a456-426614174002',
-      full_name: 'Emma Brown',
-      avatar_url: 'https://ui-avatars.com/api/?name=EB&background=009688',
-      joined_at: '2024-04-02T00:00:00Z',
-      is_captain: false,
-      total_minutes: 160,
-      contribution_percentage: '6.1%',
-      rank: 8,
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174017',
-      user_id: '123e4567-e89b-12d3-a456-426614174018',
-      team_id: '123e4567-e89b-12d3-a456-426614174002',
-      full_name: 'Robert Kim',
-      avatar_url: 'https://ui-avatars.com/api/?name=RK&background=795548',
-      joined_at: '2024-04-01T00:00:00Z',
-      is_captain: false,
-      total_minutes: 145,
-      contribution_percentage: '5.5%',
-      rank: 9,
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174019',
-      user_id: '123e4567-e89b-12d3-a456-426614174020',
-      team_id: '123e4567-e89b-12d3-a456-426614174002',
-      full_name: 'Lisa Martinez',
-      avatar_url: 'https://ui-avatars.com/api/?name=LM&background=607D8B',
-      joined_at: '2024-04-03T00:00:00Z',
-      is_captain: false,
-      total_minutes: 130,
-      contribution_percentage: '4.9%',
-      rank: 10,
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174021',
-      user_id: '123e4567-e89b-12d3-a456-426614174022',
-      team_id: '123e4567-e89b-12d3-a456-426614174002',
-      full_name: 'Tom Anderson',
-      avatar_url: 'https://ui-avatars.com/api/?name=TA&background=795548',
-      joined_at: '2024-04-04T00:00:00Z',
-      is_captain: false,
-      total_minutes: 120,
-      contribution_percentage: '4.5%',
-      rank: 11,
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174023',
-      user_id: '123e4567-e89b-12d3-a456-426614174024',
-      team_id: '123e4567-e89b-12d3-a456-426614174002',
-      full_name: 'Rachel Green',
-      avatar_url: 'https://ui-avatars.com/api/?name=RG&background=8BC34A',
-      joined_at: '2024-04-05T00:00:00Z',
-      is_captain: false,
-      total_minutes: 110,
-      contribution_percentage: '4.2%',
-      rank: 12,
-    },
-  ];
+  // Fetch team members when team is loaded
+  useEffect(() => {
+    if (userTeam) {
+      fetchTeamMembers();
+      fetchTeamRank();
+    }
+  }, [userTeam]);
 
-  const displayedMembers = showAllMembers ? allTeamMembers : allTeamMembers.slice(0, 5);
-
-  const progressPercentage = (teamStats.totalMinutes / teamStats.targetMinutes) * 100;
+  // Update team stats when team members or total minutes change
+  useEffect(() => {
+    if (userTeam && teamMembers.length > 0) {
+      fetchTeamStats();
+    }
+  }, [userTeam, teamMembers, totalTeamMinutes]);
 
   // Update the useEffect to debounce search and prevent performance issues
   useEffect(() => {
     const debounceTimeout = setTimeout(() => {
       if (searchQuery.trim() === '') {
-        setFilteredMembers(displayedMembers);
+        setFilteredMembers(teamMembers);
       } else {
         const query = searchQuery.toLowerCase().trim();
-        const results = allTeamMembers.filter(member => {
+        const results = teamMembers.filter(member => {
           const fullName = member.full_name.toLowerCase();
           const nameParts = fullName.split(' ');
 
@@ -228,7 +146,290 @@ export default function TeamScreen() {
     }, 300); // 300ms delay to debounce search input
 
     return () => clearTimeout(debounceTimeout);
-  }, [searchQuery, displayedMembers, allTeamMembers]);
+  }, [searchQuery, teamMembers]);
+
+  // Fetch user's team and event
+  const fetchUserTeamAndEvent = async () => {
+    try {
+      setLoading(true);
+      
+      // Get user's team memberships
+      const { data: memberships, error: membershipError } = await supabase
+        .from('team_members')
+        .select('team_id, teams!inner(id, team_name, team_minute_goal, captain_id, event_id, events!inner(id, name, start_date, end_date, status))')
+        .eq('user_id', user?.id);
+      
+      if (membershipError) {
+        console.error('Error fetching team memberships:', membershipError);
+        setLoading(false);
+        return;
+      }
+      
+      if (!memberships || memberships.length === 0) {
+        // User is not part of any team
+        setLoading(false);
+        return;
+      }
+      
+      // Find active event team first
+      let activeEventTeam = null;
+      
+      // Try to find an active event
+      for (const membership of memberships) {
+        // Access nested properties safely - handle teams as an array
+        const teamsArray = membership?.teams;
+        if (teamsArray && Array.isArray(teamsArray) && teamsArray.length > 0) {
+          const team = teamsArray[0];
+          const eventsArray = team.events;
+          if (eventsArray && Array.isArray(eventsArray) && eventsArray.length > 0) {
+            const event = eventsArray[0];
+            if (event.status === 'Active') {
+              activeEventTeam = membership;
+              break;
+            }
+          }
+        }
+      }
+      
+      // If no active event, look for upcoming event
+      if (!activeEventTeam) {
+        for (const membership of memberships) {
+          const teamsArray = membership?.teams;
+          if (teamsArray && Array.isArray(teamsArray) && teamsArray.length > 0) {
+            const team = teamsArray[0];
+            const eventsArray = team.events;
+            if (eventsArray && Array.isArray(eventsArray) && eventsArray.length > 0) {
+              const event = eventsArray[0];
+              if (event.status === 'Upcoming') {
+                activeEventTeam = membership;
+                break;
+              }
+            }
+          }
+        }
+      }
+      
+      // If neither active nor upcoming, use the first one (likely archived)
+      if (!activeEventTeam && memberships.length > 0) {
+        activeEventTeam = memberships[0];
+      }
+      
+      if (activeEventTeam) {
+        const teamsArray = activeEventTeam.teams;
+        if (teamsArray && Array.isArray(teamsArray) && teamsArray.length > 0) {
+          const team = teamsArray[0];
+          
+          const teamData = {
+            id: team.id || '',
+            team_name: team.team_name || '',
+            team_minute_goal: team.team_minute_goal || 10000,
+            captain_id: team.captain_id || '',
+            event_id: team.event_id || ''
+          };
+          
+          const eventsArray = team.events;
+          if (eventsArray && Array.isArray(eventsArray) && eventsArray.length > 0) {
+            const event = eventsArray[0];
+            
+            const eventData = {
+              id: event.id || '',
+              name: event.name || '',
+              start_date: event.start_date || '',
+              end_date: event.end_date || '',
+              status: (event.status as 'Upcoming' | 'Active' | 'Archive') || 'Archive'
+            };
+            
+            setUserTeam(teamData);
+            setUserEvent(eventData);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching user team:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch team members
+  const fetchTeamMembers = async () => {
+    if (!userTeam) return;
+    
+    try {
+      // Get all team members
+      const { data: members, error: membersError } = await supabase
+        .from('team_members')
+        .select('id, team_id, user_id, joined_at, profiles!inner(id, full_name, avatar_url)')
+        .eq('team_id', userTeam.id);
+      
+      if (membersError) {
+        console.error('Error fetching team members:', membersError);
+        return;
+      }
+      
+      // Get activities for all team members
+      const { data: activities, error: activitiesError } = await supabase
+        .from('activities')
+        .select('user_id, activity_minutes')
+        .eq('event_id', userTeam.event_id);
+      
+      if (activitiesError) {
+        console.error('Error fetching activities:', activitiesError);
+      }
+      
+      // Calculate minutes for each member
+      const memberMinutes: { [key: string]: number } = {};
+      
+      activities?.forEach(activity => {
+        memberMinutes[activity.user_id] = (memberMinutes[activity.user_id] || 0) + activity.activity_minutes;
+      });
+      
+      // Calculate total minutes for the team
+      const totalMinutes = Object.values(memberMinutes).reduce((sum, minutes) => sum + minutes, 0);
+      setTotalTeamMinutes(totalMinutes);
+      
+      // Map members with their minutes and calculate contribution percentage
+      const mappedMembers: TeamMember[] = [];
+      
+      if (members) {
+        for (const member of members) {
+          if (member) {
+            // Handle profiles as an array if needed
+            const profileData = member.profiles;
+            const profile = Array.isArray(profileData) ? profileData[0] : profileData;
+            
+            if (profile) {
+              const userMinutes = memberMinutes[member.user_id] || 0;
+              const contributionPercentage = totalMinutes > 0 
+                ? ((userMinutes / totalMinutes) * 100).toFixed(1) + '%'
+                : '0.0%';
+              
+              mappedMembers.push({
+                id: member.id,
+                user_id: member.user_id,
+                team_id: member.team_id,
+                full_name: profile.full_name,
+                avatar_url: profile.avatar_url,
+                joined_at: member.joined_at,
+                is_captain: userTeam.captain_id === member.user_id,
+                total_minutes: userMinutes,
+                contribution_percentage: contributionPercentage,
+                rank: 0, // Will be set after sorting
+              });
+            }
+          }
+        }
+      }
+      
+      // Sort by minutes (descending) and assign ranks
+      mappedMembers.sort((a, b) => b.total_minutes - a.total_minutes);
+      mappedMembers.forEach((member, index) => {
+        member.rank = index + 1;
+      });
+      
+      setTeamMembers(mappedMembers);
+      setFilteredMembers(mappedMembers);
+    } catch (err) {
+      console.error('Error processing team members:', err);
+    }
+  };
+
+  // Fetch team statistics
+  const fetchTeamStats = async () => {
+    if (!userTeam) return;
+    
+    try {
+      // Get active members count (members with at least 1 minute logged)
+      const activeMembers = teamMembers.filter(member => member.total_minutes > 0).length;
+      
+      // Calculate average minutes per member
+      const avgMinPerMember = teamMembers.length > 0 
+        ? Math.round(totalTeamMinutes / teamMembers.length) 
+        : 0;
+      
+      // Calculate weekly growth (mock data for now)
+      // In a real implementation, you would compare activity from current week vs previous week
+      const weeklyGrowth = 15;
+      
+      setTeamStats({
+        totalMinutes: totalTeamMinutes,
+        targetMinutes: userTeam.team_minute_goal,
+        activeMembers,
+        weeklyGrowth,
+        avgMinPerMember,
+      });
+    } catch (err) {
+      console.error('Error calculating team stats:', err);
+    }
+  };
+
+  // Fetch team rank in the event
+  const fetchTeamRank = async () => {
+    if (!userTeam) return;
+    
+    try {
+      // Get all teams in the event
+      const { data: teams, error: teamsError } = await supabase
+        .from('teams')
+        .select('id')
+        .eq('event_id', userTeam.event_id);
+      
+      if (teamsError) {
+        console.error('Error fetching teams:', teamsError);
+        return;
+      }
+      
+      // For each team, calculate total minutes
+      const teamMinutes: { id: string, totalMinutes: number }[] = [];
+      
+      for (const team of teams) {
+        // Get activities for this team's members
+        const { data: teamMemberIds, error: memberError } = await supabase
+          .from('team_members')
+          .select('user_id')
+          .eq('team_id', team.id);
+        
+        if (memberError) {
+          console.error(`Error fetching members for team ${team.id}:`, memberError);
+          continue;
+        }
+        
+        if (!teamMemberIds || teamMemberIds.length === 0) {
+          teamMinutes.push({ id: team.id, totalMinutes: 0 });
+          continue;
+        }
+        
+        const userIds = teamMemberIds.map(m => m.user_id);
+        
+        // Get activities for these users
+        const { data: activities, error: activitiesError } = await supabase
+          .from('activities')
+          .select('activity_minutes')
+          .eq('event_id', userTeam.event_id)
+          .in('user_id', userIds);
+        
+        if (activitiesError) {
+          console.error(`Error fetching activities for team ${team.id}:`, activitiesError);
+          continue;
+        }
+        
+        const teamTotalMinutes = activities?.reduce((sum, activity) => 
+          sum + activity.activity_minutes, 0) || 0;
+        
+        teamMinutes.push({ id: team.id, totalMinutes: teamTotalMinutes });
+      }
+      
+      // Sort by minutes (descending)
+      teamMinutes.sort((a, b) => b.totalMinutes - a.totalMinutes);
+      
+      // Find our team's rank
+      const rank = teamMinutes.findIndex(team => team.id === userTeam.id) + 1;
+      setTeamRank(rank);
+      
+    } catch (err) {
+      console.error('Error calculating team rank:', err);
+    }
+  };
 
   // Optimize memberRowStyles computation to use a stable reference
   const getMemberRowStyle = (memberId: string, index: number, isSearchResult: boolean) => {
@@ -257,9 +458,77 @@ export default function TeamScreen() {
     setSearchQuery(text);
   };
 
-  return (
-    <View style={styles.container}>
-      <ScrollView>
+  // Show goal edit modal
+  const showGoalEditModal = () => {
+    setNewGoalValue(userTeam?.team_minute_goal.toString() || '10000');
+    setGoalEditModalVisible(true);
+  };
+  
+  // Handle edit team goal
+  const handleEditTeamGoal = async () => {
+    if (!userTeam) return;
+    
+    setGoalEditModalVisible(false);
+    
+    // Validate input
+    const goalValue = parseInt(newGoalValue);
+    if (isNaN(goalValue) || goalValue <= 0) {
+      Alert.alert('Invalid Value', 'Please enter a positive number for the team goal');
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .update({ team_minute_goal: goalValue })
+        .eq('id', userTeam.id);
+      
+      if (error) {
+        console.error('Error updating team goal:', error);
+        return;
+      }
+      
+      // Update local state
+      setUserTeam({
+        ...userTeam,
+        team_minute_goal: goalValue
+      });
+      
+      // Update team stats
+      setTeamStats({
+        ...teamStats,
+        targetMinutes: goalValue
+      });
+    } catch (err) {
+      console.error('Error updating team goal:', err);
+    }
+  };
+
+  // Navigate to join event/team page
+  const navigateToJoinEvent = () => {
+    router.push('/join-event');
+  };
+
+  const displayedMembers = showAllMembers ? teamMembers : teamMembers.slice(0, 5);
+  
+  // Calculate progress percentage
+  const progressPercentage = userTeam && teamStats.targetMinutes > 0
+    ? Math.min(100, (teamStats.totalMinutes / teamStats.targetMinutes) * 100)
+    : 0;
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#C41E3A" />
+        <Text style={styles.loadingText}>Loading team data...</Text>
+      </View>
+    );
+  }
+
+  if (!userTeam) {
+    // User is not part of any team - show button to join
+    return (
+      <View style={styles.container}>
         <ImageBackground
           source={require('@/assets/images/gym-equipment.png')}
           style={styles.headerBackground}
@@ -268,33 +537,144 @@ export default function TeamScreen() {
           <LinearGradient
             colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
             locations={[0, 0.5]}
-            style={styles.headerOverlay}
+            style={styles.gradientOverlay}
           >
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>MAXX Motion</Text>
-              <View style={styles.userIcon}>
-                <Text style={styles.userIconText}>U</Text>
+            <View style={styles.headerTopBar}>
+              <Text style={styles.appTitle}>MAXX Motion</Text>
+              <View style={styles.logoContainer}>
+                <Text style={styles.logoText}>U</Text>
               </View>
             </View>
             <View style={styles.headerContent}>
-              <Text style={styles.pageTitle}>Team</Text>
-              <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
+              <Text style={styles.headerMainTitle}>Team</Text>
+              <Text style={styles.headerSubtitle}>Track your motion. Reach your potential.</Text>
             </View>
           </LinearGradient>
         </ImageBackground>
+        
+        <View style={styles.noTeamContainer}>
+          <ThemedText style={styles.noTeamTitle}>You're not part of any team yet</ThemedText>
+          <ThemedText style={styles.noTeamSubtext}>Join a team to start tracking your progress together!</ThemedText>
+          <TouchableOpacity style={styles.joinButton} onPress={navigateToJoinEvent}>
+            <ThemedText style={styles.joinButtonText}>Join an Event & Team</ThemedText>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
+  // Show goal edit modal
+  const showGoalEditModal = () => {
+    setNewGoalValue(userTeam?.team_minute_goal.toString() || '10000');
+    setGoalEditModalVisible(true);
+  };
+  
+  // Handle edit team goal
+  const handleEditTeamGoal = async () => {
+    if (!userTeam) return;
+    
+    setGoalEditModalVisible(false);
+    
+    // Validate input
+    const goalValue = parseInt(newGoalValue);
+    if (isNaN(goalValue) || goalValue <= 0) {
+      Alert.alert('Invalid Value', 'Please enter a positive number for the team goal');
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .update({ team_minute_goal: goalValue })
+        .eq('id', userTeam.id);
+      
+      if (error) {
+        console.error('Error updating team goal:', error);
+        return;
+      }
+      
+      // Update local state
+      setUserTeam({
+        ...userTeam,
+        team_minute_goal: goalValue
+      });
+      
+      // Update team stats
+      setTeamStats({
+        ...teamStats,
+        targetMinutes: goalValue
+      });
+    } catch (err) {
+      console.error('Error updating team goal:', err);
+    }
+  };
+
+  // Navigate to join event/team page
+  const navigateToJoinEvent = () => {
+    router.push('/join-event');
+  };
+
+  const displayedMembers = showAllMembers ? teamMembers : teamMembers.slice(0, 5);
+  
+  // Calculate progress percentage
+  const progressPercentage = userTeam && teamStats.targetMinutes > 0
+    ? Math.min(100, (teamStats.totalMinutes / teamStats.targetMinutes) * 100)
+    : 0;
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#C41E3A" />
+        <Text style={styles.loadingText}>Loading team data...</Text>
+      </View>
+    );
+  }
+
+  if (!userTeam) {
+    // User is not part of any team - show button to join
+    return (
+      <View style={styles.container}>
+        <ImageBackground
+          source={require('@/assets/images/gym-equipment.png')}
+          style={styles.headerBackground}
+          resizeMode="cover"
+        >
+          <LinearGradient
+            colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
+            locations={[0, 0.5]}
+            style={styles.gradientOverlay}
+          >
+            <View style={styles.headerTopBar}>
+              <Text style={styles.appTitle}>MAXX Motion</Text>
+              <View style={styles.logoContainer}>
+                <Text style={styles.logoText}>U</Text>
+              </View>
+            </View>
+            <View style={styles.headerContent}>
+              <Text style={styles.headerMainTitle}>Team</Text>
+              <Text style={styles.headerSubtitle}>Track your motion. Reach your potential.</Text>
+            </View>
+          </LinearGradient>
+        </ImageBackground>
+        
         <View style={styles.content}>
           <ThemedView style={styles.card}>
             <View style={styles.teamInfo}>
               <View style={styles.teamIcon}>
-                <ThemedText style={styles.teamIconText}>MM</ThemedText>
+                <ThemedText style={styles.teamIconText}>
+                  {userTeam.team_name.split(' ').map(word => word[0]).join('').substring(0, 2).toUpperCase()}
+                </ThemedText>
               </View>
               <View style={styles.teamDetails}>
-                <ThemedText style={styles.teamName}>Move Masters</ThemedText>
-                <ThemedText style={styles.teamSubtext}>12 Members • Captain: {allTeamMembers.find(m => m.is_captain)?.full_name}</ThemedText>
+                <ThemedText style={styles.teamName}>{userTeam.team_name}</ThemedText>
+                <ThemedText style={styles.teamSubtext}>
+                  {teamMembers.length} Members • Captain: {teamMembers.find(m => m.is_captain)?.full_name || 'Unknown'}
+                </ThemedText>
                 <View style={styles.progressContainer}>
                   <View style={[styles.progressBar, { width: `${progressPercentage}%` }]} />
-                  <ThemedText style={styles.progressText}>{teamStats.totalMinutes} / {teamStats.targetMinutes} minutes</ThemedText>
+                  <ThemedText style={styles.progressText}>
+                    {teamStats.totalMinutes} / {teamStats.targetMinutes} minutes
+                  </ThemedText>
                 </View>
               </View>
             </View>
@@ -308,17 +688,18 @@ export default function TeamScreen() {
                 <ThemedText style={[
                   styles.actionButtonText,
                   hoveredButton === 'rank' && styles.actionButtonTextHovered
-                ]}>RANK: 2nd</ThemedText>
+                ]}>RANK: {teamRank ? `${teamRank}${teamRank === 1 ? 'st' : teamRank === 2 ? 'nd' : teamRank === 3 ? 'rd' : 'th'}` : '...'}</ThemedText>
               </Pressable>
               <Pressable
                 style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]}
                 onHoverIn={() => setHoveredButton('edit')}
                 onHoverOut={() => setHoveredButton(null)}
+                onPress={showGoalEditModal}
               >
                 <ThemedText style={[
                   styles.actionButtonText,
                   hoveredButton === 'edit' && styles.actionButtonTextHovered
-                ]}>EDIT TEAM</ThemedText>
+                ]}>EDIT GOAL</ThemedText>
               </Pressable>
               <Pressable
                 style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]}
@@ -376,7 +757,7 @@ export default function TeamScreen() {
                 return (
                   <View key={member.id} style={styles.memberItemContainer}>
                     <Image
-                      source={{ uri: member.avatar_url || undefined }}
+                      source={{ uri: member.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.full_name)}&background=random` }}
                       style={styles.memberAvatar}
                     />
                     <Pressable
@@ -419,13 +800,13 @@ export default function TeamScreen() {
                 </View>
               )}
             </View>
-
-            {searchQuery.trim() === '' && (
-              <Pressable
+            
+            {searchQuery.trim() === '' && teamMembers.length > 5 && (
+              <Pressable 
                 onPress={() => setShowAllMembers(!showAllMembers)}
               >
                 <ThemedText style={styles.seeAllMembers}>
-                  {showAllMembers ? 'SHOW LESS' : 'SEE ALL MEMBERS (12)'}
+                  {showAllMembers ? 'SHOW LESS' : `SEE ALL MEMBERS (${teamMembers.length})`}
                 </ThemedText>
               </Pressable>
             )}
@@ -441,12 +822,47 @@ export default function TeamScreen() {
           joined_at: selectedMember.joined_at,
           rank: selectedMember.rank,
           total_minutes: selectedMember.total_minutes,
-          activities_logged: Math.floor(selectedMember.total_minutes / 30), // Mock data
+          activities_logged: Math.floor(selectedMember.total_minutes / 30), // Approximation
           current_milestone: `${Math.floor(selectedMember.total_minutes / 100) * 100} minutes`,
           contribution_percentage: selectedMember.contribution_percentage,
           avatar_url: selectedMember.avatar_url || '',
         } : null}
       />
+      
+      {/* Edit Goal Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={goalEditModalVisible}
+        onRequestClose={() => setGoalEditModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Team Minute Goal</Text>
+            <TextInput
+              style={styles.goalInput}
+              keyboardType="number-pad"
+              value={newGoalValue}
+              onChangeText={setNewGoalValue}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]} 
+                onPress={() => setGoalEditModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.saveButton]} 
+                onPress={handleEditTeamGoal}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -456,18 +872,68 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
-  headerBackground: {
-    height: 300,
-  },
-  headerOverlay: {
+  loadingContainer: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#333',
+  },
+  noTeamContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  noTeamTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  noTeamSubtext: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  joinButton: {
+    backgroundColor: '#C41E3A',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  joinButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  headerBackground: {
+    width: '100%',
+    height: 240,
+    resizeMode: 'cover',
+  },
+  gradientOverlay: {
+    flex: 1,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Add light overlay for better text visibility
+  },
+  headerContent: {
+    flex: 1,
     justifyContent: 'space-between',
-    padding: 16,
-    zIndex: 1,
+    paddingBottom: 20,
+    alignItems: 'center',
+  },
+  headerTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
   },
   headerTitle: {
     color: '#fff',
@@ -478,9 +944,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#fff',
-    alignItems: 'center',
+    backgroundColor: 'white',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   userIconText: {
     fontSize: 16,
@@ -785,5 +1251,65 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666666',
     fontStyle: 'italic',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 24,
+    width: '80%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: '#333',
+  },
+  goalInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f2f2f2',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontWeight: '600',
+  },
+  saveButton: {
+    backgroundColor: '#007AFF',
+  },
+  saveButtonText: {
+    color: 'white',
+    fontWeight: '600',
   },
 }); 
