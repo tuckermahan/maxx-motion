@@ -192,15 +192,19 @@ type Milestone = {
 export default function AchievementsScreen() {
   const { userProfile } = useUser();
   const [showAchievement, setShowAchievement] = useState(false);
-  const [currentStreak, setCurrentStreak] = useState(5);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [totalMinutes, setTotalMinutes] = useState(0);
+  const [badgeProgress, setBadgeProgress] = useState<Record<string, number>>({});
   const scaleAnim = new Animated.Value(1);
   const router = useRouter();
 
   useEffect(() => {
     fetchMilestones();
+    fetchBadgeProgress();
+    fetchStreak();
+    console.log('Initial useEffect called');
   }, []);
 
   const fetchMilestones = async () => {
@@ -274,6 +278,159 @@ export default function AchievementsScreen() {
     }
   };
 
+  const fetchBadgeProgress = async () => {
+    try {
+      if (!userProfile?.id) return;
+
+      // Get the current active event
+      const { data: activeEvent, error: eventError } = await supabase
+        .from('events')
+        .select('id')
+        .eq('status', 'Active')
+        .single();
+
+      if (eventError) {
+        console.error('Error fetching active event:', eventError);
+        return;
+      }
+
+      // Fetch user's activities
+      const { data: activities, error: activitiesError } = await supabase
+        .from('activities')
+        .select('activity_minutes, activity_date, activity_type')
+        .eq('event_id', activeEvent.id)
+        .eq('user_id', userProfile.id);
+
+      if (activitiesError) {
+        console.error('Error fetching activities:', activitiesError);
+        return;
+      }
+
+      // Calculate progress for each badge type
+      const progress: Record<string, number> = {};
+
+      // Step-based badges
+      const maxSteps = Math.max(...activities.map(a => a.activity_minutes || 0));
+      progress['1'] = Math.min(5000, maxSteps); // Step Starter
+      progress['2'] = Math.min(10000, maxSteps); // Step Master
+      progress['3'] = Math.min(20000, maxSteps); // Step Champion
+
+      // Workout badges
+      const workoutCount = activities.filter(a => a.activity_type === 'workout').length;
+      progress['4'] = Math.min(10, workoutCount); // Workout Beginner
+      progress['5'] = Math.min(50, workoutCount); // Workout Expert
+      progress['6'] = Math.min(100, workoutCount); // Workout Master
+
+      // Activity-specific badges
+      const runningCount = activities.filter(a => a.activity_type?.toLowerCase() === 'running').length;
+      const cyclingCount = activities.filter(a => a.activity_type?.toLowerCase() === 'cycling').length;
+      const yogaCount = activities.filter(a => a.activity_type?.toLowerCase() === 'yoga').length;
+
+      progress['7'] = Math.min(5, runningCount); // Runner's Badge
+      progress['8'] = Math.min(25, cyclingCount); // Cyclist's Badge
+      progress['9'] = Math.min(10, yogaCount); // Yogi's Badge
+
+      // Time-based badges
+      const earlyWorkouts = activities.filter(a => {
+        const hour = new Date(a.activity_date).getHours();
+        return hour < 7;
+      }).length;
+
+      const weekendWorkouts = activities.filter(a => {
+        const day = new Date(a.activity_date).getDay();
+        return day === 0 || day === 6;
+      }).length;
+
+      const nightWorkouts = activities.filter(a => {
+        const hour = new Date(a.activity_date).getHours();
+        return hour >= 22;
+      }).length;
+
+      progress['10'] = Math.min(5, earlyWorkouts); // Early Bird
+      progress['11'] = Math.min(5, weekendWorkouts); // Weekend Warrior
+      progress['12'] = Math.min(5, nightWorkouts); // Night Owl
+
+      setBadgeProgress(progress);
+    } catch (error) {
+      console.error('Error in fetchBadgeProgress:', error);
+    }
+  };
+
+  const fetchStreak = async () => {
+    try {
+      console.log('fetchStreak called');
+      if (!userProfile?.id) {
+        console.log('No user profile ID');
+        return;
+      }
+
+      // Get the current active event
+      const { data: activeEvent, error: eventError } = await supabase
+        .from('events')
+        .select('id')
+        .eq('status', 'Active')
+        .single();
+
+      if (eventError) {
+        console.error('Error fetching active event:', eventError);
+        return;
+      }
+
+      console.log('Active event:', activeEvent);
+
+      // Fetch user's activities
+      const { data: activities, error: activitiesError } = await supabase
+        .from('activities')
+        .select('activity_date')
+        .eq('event_id', activeEvent.id)
+        .eq('user_id', userProfile.id)
+        .order('activity_date', { ascending: false });
+
+      if (activitiesError) {
+        console.error('Error fetching activities:', activitiesError);
+        return;
+      }
+
+      console.log('Activities:', activities);
+
+      if (!activities || activities.length === 0) {
+        console.log('No activities found');
+        setCurrentStreak(0);
+        return;
+      }
+
+      // SIMPLIFIED APPROACH: Just count activities from today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Format today's date as YYYY-MM-DD for comparison
+      const todayFormatted = today.toISOString().split('T')[0];
+      console.log('Today formatted:', todayFormatted);
+
+      // Count activities from today using string comparison
+      const todayActivities = activities.filter(activity => {
+        // Format activity date as YYYY-MM-DD
+        const activityDateFormatted = activity.activity_date.split('T')[0];
+        console.log('Activity date:', activity.activity_date, 'Formatted:', activityDateFormatted);
+        return activityDateFormatted === todayFormatted;
+      });
+
+      console.log('Today activities count:', todayActivities.length);
+
+      // If there are activities today, set streak to at least 1
+      if (todayActivities.length > 0) {
+        console.log('Setting streak to 1 for today');
+        setCurrentStreak(1);
+      } else {
+        console.log('No activities today, setting streak to 0');
+        setCurrentStreak(0);
+      }
+    } catch (error) {
+      console.error('Error in fetchStreak:', error);
+      setCurrentStreak(0);
+    }
+  };
+
   useEffect(() => {
     const pulseAnimation = Animated.sequence([
       Animated.timing(scaleAnim, {
@@ -324,7 +481,8 @@ export default function AchievementsScreen() {
 
   const renderProgressEmojis = (badge: Badge) => {
     const totalEmojis = 5;
-    const filledEmojis = Math.floor((badge.progress / badge.total) * totalEmojis);
+    const progress = badgeProgress[badge.id] || 0;
+    const filledEmojis = Math.floor((progress / badge.total) * totalEmojis);
 
     return (
       <View style={styles.emojiContainer}>
@@ -339,6 +497,8 @@ export default function AchievementsScreen() {
 
   const renderBadge = ({ item, index }: { item: Badge; index: number }) => {
     const scaleAnim = new Animated.Value(1);
+    const progress = badgeProgress[item.id] || 0;
+    const isUnlocked = progress >= item.total;
 
     const onPressIn = () => {
       Animated.spring(scaleAnim, {
@@ -354,7 +514,7 @@ export default function AchievementsScreen() {
         friction: 5,
         useNativeDriver: true,
       }).start();
-      setSelectedBadge(item);
+      setSelectedBadge({ ...item, isUnlocked, progress });
     };
 
     const categoryColor = getCategoryColor(item.category);
@@ -369,11 +529,11 @@ export default function AchievementsScreen() {
         <Animated.View
           style={[
             styles.badge,
-            item.isUnlocked ? styles.badgeUnlocked : styles.badgeLocked,
+            isUnlocked ? styles.badgeUnlocked : styles.badgeLocked,
             { transform: [{ scale: scaleAnim }] }
           ]}
         >
-          {item.isUnlocked && (
+          {isUnlocked && (
             <View style={styles.unlockedOverlay}>
               <View style={styles.unlockedIndicator}>
                 <FontAwesome5 name="check-circle" size={24} color="#4CAF50" />
@@ -388,7 +548,7 @@ export default function AchievementsScreen() {
           />
 
           <View style={styles.badgeContent}>
-            <Text style={[styles.badgeName, !item.isUnlocked && styles.badgeNameLocked]}>
+            <Text style={[styles.badgeName, !isUnlocked && styles.badgeNameLocked]}>
               {item.name}
             </Text>
             <View style={[styles.categoryContainer, { backgroundColor: categoryColor }]}>
@@ -400,7 +560,7 @@ export default function AchievementsScreen() {
             {renderProgressEmojis(item)}
           </View>
           <Text style={styles.progressText}>
-            {item.progress}/{item.total}
+            {progress}/{item.total}
           </Text>
         </Animated.View>
       </TouchableOpacity>
@@ -409,6 +569,7 @@ export default function AchievementsScreen() {
 
   const renderBadgeModal = (badge: Badge) => {
     const categoryColor = getCategoryColor(badge.category);
+    const progress = badgeProgress[badge.id] || 0;
 
     return (
       <View style={styles.modalContent}>
@@ -426,7 +587,7 @@ export default function AchievementsScreen() {
           <Text style={styles.modalProgressTitle}>Progress:</Text>
           {renderProgressEmojis(badge)}
           <Text style={styles.modalProgressText}>
-            {badge.name === 'Step Champion' || badge.name === 'Workout Master' ? 0 : badge.progress} of {badge.total} completed
+            {progress} of {badge.total} completed
           </Text>
         </>
         <TouchableOpacity
@@ -444,7 +605,7 @@ export default function AchievementsScreen() {
 
     return (
       <View style={styles.milestoneSection}>
-        <Text style={styles.milestoneTitle}>Event Milestones</Text>
+        <Text style={styles.milestoneTitle}>Activity Milestones</Text>
         <View style={styles.totalMinutesContainer}>
           <Text style={styles.totalMinutesLabel}>Total Minutes:</Text>
           <Text style={styles.totalMinutesValue}>{totalMinutes}</Text>

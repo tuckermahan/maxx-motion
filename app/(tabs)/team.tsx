@@ -118,32 +118,32 @@ export default function TeamScreen() {
         const results = teamMembers.filter(member => {
           const fullName = member.full_name.toLowerCase();
           const nameParts = fullName.split(' ');
-          
-          return fullName.includes(query) || 
-                 nameParts.some(part => part.includes(query));
+
+          return fullName.includes(query) ||
+            nameParts.some(part => part.includes(query));
         });
-        
+
         // Sort results by relevance
         results.sort((a, b) => {
           const aName = a.full_name.toLowerCase();
           const bName = b.full_name.toLowerCase();
-          
+
           // Exact matches first
           if (aName === query) return -1;
           if (bName === query) return 1;
-          
+
           // Then starts with
           if (aName.startsWith(query) && !bName.startsWith(query)) return -1;
           if (bName.startsWith(query) && !aName.startsWith(query)) return 1;
-          
+
           // Default to rank order
           return a.rank - b.rank;
         });
-        
+
         setFilteredMembers(results);
       }
     }, 300); // 300ms delay to debounce search input
-    
+
     return () => clearTimeout(debounceTimeout);
   }, [searchQuery, teamMembers]);
 
@@ -151,34 +151,34 @@ export default function TeamScreen() {
   const fetchUserTeamAndEvent = async () => {
     try {
       setLoading(true);
-      
+
       console.log('Fetching teams for user:', user?.id);
-      
+
       // Get user's team memberships
       const { data: memberships, error: membershipError } = await supabase
         .from('team_members')
         .select('team_id, teams!inner(id, team_name, team_minute_goal, captain_id, event_id, events!inner(id, name, start_date, end_date, status))')
         .eq('user_id', user?.id);
-      
+
       if (membershipError) {
         console.error('Error fetching team memberships:', membershipError);
         setLoading(false);
         return;
       }
-      
+
       console.log('Team memberships found:', memberships?.length || 0);
       console.log('Raw membership data:', JSON.stringify(memberships));
-      
+
       if (!memberships || memberships.length === 0) {
         // User is not part of any team
         console.log('No team memberships found for user');
         setLoading(false);
         return;
       }
-      
+
       // Find active event team first
       let activeEventTeam = null;
-      
+
       // Try to find an active event
       for (const membership of memberships) {
         // Access nested properties safely - handle teams as an array
@@ -186,12 +186,12 @@ export default function TeamScreen() {
         if (teamsArray && Array.isArray(teamsArray) && teamsArray.length > 0) {
           const team = teamsArray[0];
           console.log('Checking team:', team?.team_name);
-          
+
           const eventsArray = team.events;
           if (eventsArray && Array.isArray(eventsArray) && eventsArray.length > 0) {
             const event = eventsArray[0];
             console.log('Found event with status:', event?.status);
-            
+
             if (event.status === 'Active') {
               console.log('Active event found:', event?.name);
               activeEventTeam = membership;
@@ -204,7 +204,7 @@ export default function TeamScreen() {
           console.log('Teams array is empty or not properly structured');
         }
       }
-      
+
       // If no active event, look for upcoming event
       if (!activeEventTeam) {
         console.log('No active event found, looking for upcoming events');
@@ -224,22 +224,22 @@ export default function TeamScreen() {
           }
         }
       }
-      
+
       // If neither active nor upcoming, use the first one (likely archived)
       if (!activeEventTeam && memberships.length > 0) {
         console.log('No active or upcoming events found, using first available membership');
         activeEventTeam = memberships[0];
       }
-      
+
       if (activeEventTeam) {
         console.log('Selected team membership:', activeEventTeam);
         const teamsArray = activeEventTeam.teams;
-        
+
         // Check if teams is already an object rather than an array
         if (teamsArray && typeof teamsArray === 'object') {
           let team;
           let eventsData;
-          
+
           // Handle both array and direct object cases
           if (Array.isArray(teamsArray)) {
             console.log('Teams is an array with length:', teamsArray.length);
@@ -250,10 +250,10 @@ export default function TeamScreen() {
             console.log('Teams is a direct object');
             team = teamsArray;
           }
-          
+
           if (team) {
             console.log('Team found:', team.team_name);
-            
+
             const teamData = {
               id: team.id || '',
               team_name: team.team_name || '',
@@ -261,7 +261,7 @@ export default function TeamScreen() {
               captain_id: team.captain_id || '',
               event_id: team.event_id || ''
             };
-            
+
             // Handle events the same way - could be array or direct object
             if (team.events) {
               if (Array.isArray(team.events)) {
@@ -273,10 +273,10 @@ export default function TeamScreen() {
                 console.log('Events is a direct object');
                 eventsData = team.events;
               }
-              
+
               if (eventsData) {
                 console.log('Event found:', eventsData.name, 'with status:', eventsData.status);
-                
+
                 const eventData = {
                   id: eventsData.id || '',
                   name: eventsData.name || '',
@@ -284,10 +284,10 @@ export default function TeamScreen() {
                   end_date: eventsData.end_date || '',
                   status: (eventsData.status as 'Upcoming' | 'Active' | 'Archive') || 'Archive'
                 };
-                
+
                 console.log('Setting user team:', teamData);
                 console.log('Setting user event:', eventData);
-                
+
                 setUserTeam(teamData);
                 setUserEvent(eventData);
               } else {
@@ -315,56 +315,56 @@ export default function TeamScreen() {
   // Fetch team members
   const fetchTeamMembers = async () => {
     if (!userTeam) return;
-    
+
     try {
       // Get all team members
       const { data: members, error: membersError } = await supabase
         .from('team_members')
         .select('id, team_id, user_id, joined_at, profiles!inner(id, full_name, avatar_url)')
         .eq('team_id', userTeam.id);
-      
+
       if (membersError) {
         console.error('Error fetching team members:', membersError);
         return;
       }
-      
+
       // Get activities for all team members
       const { data: activities, error: activitiesError } = await supabase
         .from('activities')
         .select('user_id, activity_minutes')
         .eq('event_id', userTeam.event_id);
-      
+
       if (activitiesError) {
         console.error('Error fetching activities:', activitiesError);
       }
-      
+
       // Calculate minutes for each member
       const memberMinutes: { [key: string]: number } = {};
-      
+
       activities?.forEach(activity => {
         memberMinutes[activity.user_id] = (memberMinutes[activity.user_id] || 0) + activity.activity_minutes;
       });
-      
+
       // Calculate total minutes for the team
       const totalMinutes = Object.values(memberMinutes).reduce((sum, minutes) => sum + minutes, 0);
       setTotalTeamMinutes(totalMinutes);
-      
+
       // Map members with their minutes and calculate contribution percentage
       const mappedMembers: TeamMember[] = [];
-      
+
       if (members) {
         for (const member of members) {
           if (member) {
             // Handle profiles as an array if needed
             const profileData = member.profiles;
             const profile = Array.isArray(profileData) ? profileData[0] : profileData;
-            
+
             if (profile) {
               const userMinutes = memberMinutes[member.user_id] || 0;
-              const contributionPercentage = totalMinutes > 0 
+              const contributionPercentage = totalMinutes > 0
                 ? ((userMinutes / totalMinutes) * 100).toFixed(1) + '%'
                 : '0.0%';
-              
+
               mappedMembers.push({
                 id: member.id,
                 user_id: member.user_id,
@@ -381,13 +381,13 @@ export default function TeamScreen() {
           }
         }
       }
-      
+
       // Sort by minutes (descending) and assign ranks
       mappedMembers.sort((a, b) => b.total_minutes - a.total_minutes);
       mappedMembers.forEach((member, index) => {
         member.rank = index + 1;
       });
-      
+
       setTeamMembers(mappedMembers);
       setFilteredMembers(mappedMembers);
     } catch (err) {
@@ -398,20 +398,20 @@ export default function TeamScreen() {
   // Fetch team statistics
   const fetchTeamStats = async () => {
     if (!userTeam) return;
-    
+
     try {
       // Get active members count (members with at least 1 minute logged)
       const activeMembers = teamMembers.filter(member => member.total_minutes > 0).length;
-      
+
       // Calculate average minutes per member
-      const avgMinPerMember = teamMembers.length > 0 
-        ? Math.round(totalTeamMinutes / teamMembers.length) 
+      const avgMinPerMember = teamMembers.length > 0
+        ? Math.round(totalTeamMinutes / teamMembers.length)
         : 0;
-      
+
       // Calculate weekly growth (mock data for now)
       // In a real implementation, you would compare activity from current week vs previous week
       const weeklyGrowth = 15;
-      
+
       setTeamStats({
         totalMinutes: totalTeamMinutes,
         targetMinutes: userTeam.team_minute_goal,
@@ -427,66 +427,66 @@ export default function TeamScreen() {
   // Fetch team rank in the event
   const fetchTeamRank = async () => {
     if (!userTeam) return;
-    
+
     try {
       // Get all teams in the event
       const { data: teams, error: teamsError } = await supabase
         .from('teams')
         .select('id')
         .eq('event_id', userTeam.event_id);
-      
+
       if (teamsError) {
         console.error('Error fetching teams:', teamsError);
         return;
       }
-      
+
       // For each team, calculate total minutes
       const teamMinutes: { id: string, totalMinutes: number }[] = [];
-      
+
       for (const team of teams) {
         // Get activities for this team's members
         const { data: teamMemberIds, error: memberError } = await supabase
           .from('team_members')
           .select('user_id')
           .eq('team_id', team.id);
-        
+
         if (memberError) {
           console.error(`Error fetching members for team ${team.id}:`, memberError);
           continue;
         }
-        
+
         if (!teamMemberIds || teamMemberIds.length === 0) {
           teamMinutes.push({ id: team.id, totalMinutes: 0 });
           continue;
         }
-        
+
         const userIds = teamMemberIds.map(m => m.user_id);
-        
+
         // Get activities for these users
         const { data: activities, error: activitiesError } = await supabase
           .from('activities')
           .select('activity_minutes')
           .eq('event_id', userTeam.event_id)
           .in('user_id', userIds);
-        
+
         if (activitiesError) {
           console.error(`Error fetching activities for team ${team.id}:`, activitiesError);
           continue;
         }
-        
-        const teamTotalMinutes = activities?.reduce((sum, activity) => 
+
+        const teamTotalMinutes = activities?.reduce((sum, activity) =>
           sum + activity.activity_minutes, 0) || 0;
-        
+
         teamMinutes.push({ id: team.id, totalMinutes: teamTotalMinutes });
       }
-      
+
       // Sort by minutes (descending)
       teamMinutes.sort((a, b) => b.totalMinutes - a.totalMinutes);
-      
+
       // Find our team's rank
       const rank = teamMinutes.findIndex(team => team.id === userTeam.id) + 1;
       setTeamRank(rank);
-      
+
     } catch (err) {
       console.error('Error calculating team rank:', err);
     }
@@ -495,12 +495,12 @@ export default function TeamScreen() {
   // Optimize memberRowStyles computation to use a stable reference
   const getMemberRowStyle = (memberId: string, index: number, isSearchResult: boolean) => {
     const isHovered = hoveredMemberId === memberId;
-    const backgroundColor = isHovered 
-      ? 'rgba(0, 0, 0, 0.15)' 
-      : index % 2 === 1 
-        ? 'rgba(0, 0, 0, 0.03)' 
+    const backgroundColor = isHovered
+      ? 'rgba(0, 0, 0, 0.15)'
+      : index % 2 === 1
+        ? 'rgba(0, 0, 0, 0.03)'
         : undefined;
-        
+
     return {
       backgroundColor,
       borderLeftWidth: isSearchResult && searchQuery.trim() !== '' ? 3 : 0,
@@ -524,37 +524,37 @@ export default function TeamScreen() {
     setNewGoalValue(userTeam?.team_minute_goal.toString() || '10000');
     setGoalEditModalVisible(true);
   };
-  
+
   // Handle edit team goal
   const handleEditTeamGoal = async () => {
     if (!userTeam) return;
-    
+
     setGoalEditModalVisible(false);
-    
+
     // Validate input
     const goalValue = parseInt(newGoalValue);
     if (isNaN(goalValue) || goalValue <= 0) {
       Alert.alert('Invalid Value', 'Please enter a positive number for the team goal');
       return;
     }
-    
+
     try {
       const { error } = await supabase
         .from('teams')
         .update({ team_minute_goal: goalValue })
         .eq('id', userTeam.id);
-      
+
       if (error) {
         console.error('Error updating team goal:', error);
         return;
       }
-      
+
       // Update local state
       setUserTeam({
         ...userTeam,
         team_minute_goal: goalValue
       });
-      
+
       // Update team stats
       setTeamStats({
         ...teamStats,
@@ -571,7 +571,7 @@ export default function TeamScreen() {
   };
 
   const displayedMembers = showAllMembers ? teamMembers : teamMembers.slice(0, 5);
-  
+
   // Calculate progress percentage
   const progressPercentage = userTeam && teamStats.targetMinutes > 0
     ? Math.min(100, (teamStats.totalMinutes / teamStats.targetMinutes) * 100)
@@ -601,7 +601,7 @@ export default function TeamScreen() {
           </View>
         </LinearGradient>
       </ImageBackground>
-      
+
       {!userTeam ? (
         <View style={styles.noTeamContainer}>
           <ThemedText style={styles.noTeamTitle}>You're not part of any team yet</ThemedText>
@@ -640,34 +640,34 @@ export default function TeamScreen() {
               </View>
 
               <View style={styles.teamActions}>
-                <Pressable 
-                  style={[styles.actionButton, hoveredButton === 'rank' && styles.actionButtonHovered]} 
+                <Pressable
+                  style={[styles.actionButton, hoveredButton === 'rank' && styles.actionButtonHovered]}
                   onHoverIn={() => setHoveredButton('rank')}
                   onHoverOut={() => setHoveredButton(null)}
                 >
                   <ThemedText style={[
-                    styles.actionButtonText, 
+                    styles.actionButtonText,
                     hoveredButton === 'rank' && styles.actionButtonTextHovered
                   ]}>RANK: {teamRank ? `${teamRank}${teamRank === 1 ? 'st' : teamRank === 2 ? 'nd' : teamRank === 3 ? 'rd' : 'th'}` : '...'}</ThemedText>
                 </Pressable>
-                <Pressable 
-                  style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]} 
+                <Pressable
+                  style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]}
                   onHoverIn={() => setHoveredButton('edit')}
                   onHoverOut={() => setHoveredButton(null)}
                   onPress={showGoalEditModal}
                 >
                   <ThemedText style={[
-                    styles.actionButtonText, 
+                    styles.actionButtonText,
                     hoveredButton === 'edit' && styles.actionButtonTextHovered
                   ]}>EDIT GOAL</ThemedText>
                 </Pressable>
-                <Pressable 
-                  style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]} 
+                <Pressable
+                  style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]}
                   onHoverIn={() => setHoveredButton('invite')}
                   onHoverOut={() => setHoveredButton(null)}
                 >
                   <ThemedText style={[
-                    styles.actionButtonText, 
+                    styles.actionButtonText,
                     hoveredButton === 'invite' && styles.actionButtonTextHovered
                   ]}>INVITE</ThemedText>
                 </Pressable>
@@ -698,8 +698,8 @@ export default function TeamScreen() {
               <ThemedView style={styles.card}>
                 <View style={styles.membersHeader}>
                   <ThemedText style={styles.sectionTitle}>Team Members</ThemedText>
-                  <TextInput 
-                    placeholder="Search members..." 
+                  <TextInput
+                    placeholder="Search members..."
                     style={styles.searchInput}
                     value={searchQuery}
                     onChangeText={handleSearch}
@@ -712,11 +712,11 @@ export default function TeamScreen() {
                   <ThemedText style={styles.headerMinutes}>MINUTES</ThemedText>
                   <ThemedText style={styles.headerContrib}>CONTRIB/RANK</ThemedText>
                 </View>
-                
+
                 <View style={styles.membersList}>
                   {(searchQuery.trim() === '' ? displayedMembers : filteredMembers).map((member, index) => {
                     const isSearchResult = searchQuery.trim() !== '' && filteredMembers.includes(member);
-                    
+
                     return (
                       <View key={member.id} style={styles.memberItemContainer}>
                         <Image
@@ -754,7 +754,7 @@ export default function TeamScreen() {
                       </View>
                     );
                   })}
-                  
+
                   {searchQuery.trim() !== '' && filteredMembers.length === 0 && (
                     <View style={styles.noResultsContainer}>
                       <ThemedText style={styles.noResultsText}>
@@ -763,9 +763,9 @@ export default function TeamScreen() {
                     </View>
                   )}
                 </View>
-                
+
                 {searchQuery.trim() === '' && teamMembers.length > 5 && (
-                  <Pressable 
+                  <Pressable
                     onPress={() => setShowAllMembers(!showAllMembers)}
                   >
                     <ThemedText style={styles.seeAllMembers}>
@@ -778,8 +778,8 @@ export default function TeamScreen() {
           </ScrollView>
         </>
       )}
-      
-      <MemberDetails 
+
+      <MemberDetails
         isVisible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         member={selectedMember ? {
@@ -793,7 +793,7 @@ export default function TeamScreen() {
           avatar_url: selectedMember.avatar_url || '',
         } : null}
       />
-      
+
       {/* Edit Goal Modal */}
       <Modal
         animationType="slide"
@@ -812,14 +812,14 @@ export default function TeamScreen() {
               autoFocus
             />
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]} 
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setGoalEditModalVisible(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.saveButton]} 
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
                 onPress={handleEditTeamGoal}
               >
                 <Text style={styles.saveButtonText}>Save</Text>
@@ -1205,12 +1205,12 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: '#C41E3A',
   },
-  
+
   noResultsContainer: {
     padding: 20,
     alignItems: 'center',
   },
-  
+
   noResultsText: {
     fontSize: 16,
     color: '#666666',
