@@ -1,18 +1,19 @@
 import React, { useEffect } from 'react';
 import { 
-  Button, 
-  Text, 
-  View, 
   StyleSheet, 
+  View, 
+  Text, 
+  Pressable, 
   ActivityIndicator, 
+  ImageBackground,
   TouchableOpacity
 } from 'react-native';
-import { useGoogleAuth } from '../hooks/useGoogleAuth';
 import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { handleAuthRouting } from '../lib/services/auth';
-import { ThemedView } from '../components/ThemedView';
-import { ThemedText } from '../components/ThemedText';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useGoogleAuth } from '../hooks/useGoogleAuth';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
   const { promptAsync, request, loading, error } = useGoogleAuth();
@@ -56,49 +57,104 @@ export default function LoginScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <Text style={styles.title}>Welcome to the Fitness Challenge</Text>
-      
-      {error && <Text style={styles.errorText}>{error}</Text>}
-      
-      {loading ? (
-        <ActivityIndicator size="large" color="#0a7ea4" />
-      ) : (
-        <Button
-          title="Sign in with Google"
-          onPress={handleSignIn}
-          disabled={!request}
-        />
-      )}
-      
-      <Text style={styles.domainText}>
-        Note: This app is restricted to maxxpotential.com email addresses
-      </Text>
-      
-      <View style={styles.backContainer}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ThemedText style={styles.backText}>Back</ThemedText>
-        </TouchableOpacity>
-      </View>
-    </ThemedView>
+    <ImageBackground
+      source={require('../assets/images/gym-equipment.png')}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <LinearGradient
+        colors={['rgba(10, 126, 164, 0.9)', 'rgba(0, 0, 0, 0.8)']}
+        locations={[0, 0.6]}
+        style={styles.container}
+      >
+        <View style={styles.formContainer}>
+          <Text style={styles.title}>MAXX Motion</Text>
+          <Text style={styles.subtitle}>Move more. Compete together.</Text>
+          
+          {error && <Text style={styles.errorText}>{error}</Text>}
+          
+          {loading ? (
+            <ActivityIndicator color="#fff" size="large" style={styles.loader} />
+          ) : (
+            <Pressable 
+              style={styles.googleButton}
+              onPress={handleSignIn}
+              disabled={!request}
+            >
+              <Ionicons name="logo-google" size={24} color="#0a7ea4" style={styles.googleIcon} />
+              <Text style={styles.googleButtonText}>Sign In with Google</Text>
+            </Pressable>
+          )}
+          
+          <Text style={styles.domainText}>
+            This app is restricted to maxxpotential.com email addresses
+          </Text>
+          
+          <TouchableOpacity style={styles.backContainer} onPress={() => router.back()}>
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+  },
+  formContainer: {
+    width: '90%',
+    maxWidth: 400,
+    padding: 30,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    alignItems: 'center',
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 20,
+    color: '#0a7ea4',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#555',
+    marginBottom: 30,
+    textAlign: 'center',
   },
   errorText: {
     color: 'red',
     marginBottom: 20,
+    textAlign: 'center',
+  },
+  loader: {
+    marginVertical: 20,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    width: '100%',
+    height: 50,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  googleIcon: {
+    marginRight: 10,
+  },
+  googleButtonText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   domainText: {
     marginTop: 20,
@@ -108,7 +164,7 @@ const styles = StyleSheet.create({
   },
   backContainer: {
     marginTop: 20,
-    alignItems: 'center',
+    paddingVertical: 10,
   },
   backText: {
     fontSize: 16,
