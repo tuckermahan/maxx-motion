@@ -110,6 +110,7 @@ export default function TabLayout() {
           name="leaderboard"
           options={{
             title: 'Leaderboard',
+            headerShown: false,
           }}
         />
         <Tabs.Screen

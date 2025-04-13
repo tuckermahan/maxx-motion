@@ -1073,7 +1073,7 @@ function getOrdinal(n: number): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F5F5',
   },
   headerBackground: {
     height: 300,
@@ -1151,7 +1151,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#F3E5F5',
+    backgroundColor: '#FFF5F5',
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1164,15 +1164,15 @@ const styles = StyleSheet.create({
   challengeTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#9C27B0',
+    color: '#C41E3A',
   },
   challengeDates: {
     fontSize: 14,
-    color: '#9C27B0',
+    color: '#C41E3A',
     opacity: 0.8,
   },
   activeTag: {
-    backgroundColor: '#9C27B0',
+    backgroundColor: '#C41E3A',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -1321,9 +1321,6 @@ const styles = StyleSheet.create({
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   activityIconContainer: {
     width: 40,
@@ -1335,7 +1332,15 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   activityIcon: {
-    color: 'white',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityIconText: {
+    color: '#fff',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -1343,9 +1348,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activityDetails: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+    marginBottom: 2,
+  },
+  activitySubtext: {
     fontSize: 14,
     color: '#666',
-    marginTop: 2,
   },
   memberItem: {
     flexDirection: 'row',
@@ -1629,5 +1642,125 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#555',
     marginTop: 2,
+  },
+  profileContainer: {
+    padding: 16,
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  profileAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#C41E3A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  profileAvatarText: {
+    color: '#fff',
+    fontSize: 32,
+    fontWeight: '600',
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  profileTeam: {
+    fontSize: 16,
+    color: '#666',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#C41E3A',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 8,
+  },
+  progressSection: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 12,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#C41E3A',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  recentActivitySection: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  activityList: {
+    gap: 12,
   },
 }); 
