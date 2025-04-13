@@ -969,7 +969,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   podiumRank: {
-    fontSize: 20,
+    fontSize: 32,
     fontWeight: '700',
     color: '#333',
   },
