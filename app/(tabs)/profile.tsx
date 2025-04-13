@@ -117,87 +117,87 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView>
-        <ImageBackground
-          source={require('@/assets/images/gym-equipment.png')}
-          style={styles.headerBackground}
-          resizeMode="cover"
+      <ImageBackground
+        source={require('@/assets/images/gym-equipment.png')}
+        style={styles.headerBackground}
+        resizeMode="cover"
+      >
+        <LinearGradient
+          colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
+          locations={[0, 0.5]}
+          style={styles.headerOverlay}
         >
-          <LinearGradient
-            colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
-            locations={[0, 0.5]}
-            style={styles.headerOverlay}
-          >
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>MAXX Motion</Text>
-              <View style={styles.userIcon}>
-                <Text style={styles.userIconText}>U</Text>
-              </View>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>MAXX Motion</Text>
+            <View style={styles.userIcon}>
+              <Text style={styles.userIconText}>U</Text>
             </View>
-            <View style={styles.headerContent}>
-              <Text style={styles.pageTitle}>My Profile</Text>
-              <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
-            </View>
-          </LinearGradient>
-        </ImageBackground>
+          </View>
+          <View style={styles.headerContent}>
+            <Text style={styles.pageTitle}>My Profile</Text>
+            <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
+          </View>
+        </LinearGradient>
+      </ImageBackground>
 
-        <ThemedView style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <View style={styles.profileAvatar}>
-              <Text style={styles.profileAvatarText}>YO</Text>
-            </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{userProfile.name}</Text>
-              <Text style={styles.profileDetails}>
-                Member since {new Date(userProfile.joined).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </Text>
-              <View style={styles.badgeContainer}>
-                <View style={styles.rankBadge}>
-                  <Text style={styles.rankText}>Rank #{userProfile.rank}</Text>
-                </View>
-                <View style={styles.minutesBadge}>
-                  <Text style={styles.minutesText}>{userProfile.totalMinutes} mins</Text>
-                </View>
-                <View style={styles.contributionBadge}>
-                  <Text style={styles.contributionText}>{userProfile.contribution_percentage}</Text>
-                </View>
+      <ThemedView style={styles.profileCard}>
+        <View style={styles.profileHeader}>
+          <View style={styles.profileAvatar}>
+            <Text style={styles.profileAvatarText}>YO</Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{userProfile.name}</Text>
+            <Text style={styles.profileDetails}>
+              Member since {new Date(userProfile.joined).toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+              })}
+            </Text>
+            <View style={styles.badgeContainer}>
+              <View style={styles.rankBadge}>
+                <Text style={styles.rankText}>Rank #{userProfile.rank}</Text>
+              </View>
+              <View style={styles.minutesBadge}>
+                <Text style={styles.minutesText}>{userProfile.totalMinutes} mins</Text>
+              </View>
+              <View style={styles.contributionBadge}>
+                <Text style={styles.contributionText}>{userProfile.contribution_percentage}</Text>
               </View>
             </View>
           </View>
-        </ThemedView>
-
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'activities' && styles.activeTab]}
-            onPress={() => setActiveTab('activities')}
-          >
-            <Text style={[styles.tabText, activeTab === 'activities' && styles.activeTabText]}>
-              ACTIVITIES
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'teams' && styles.activeTab]}
-            onPress={() => setActiveTab('teams')}
-          >
-            <Text style={[styles.tabText, activeTab === 'teams' && styles.activeTabText]}>
-              TEAMS
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'events' && styles.activeTab]}
-            onPress={() => setActiveTab('events')}
-          >
-            <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
-              EVENTS
-            </Text>
-          </TouchableOpacity>
         </View>
+      </ThemedView>
 
-        <View style={styles.content}>
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'activities' && styles.activeTab]}
+          onPress={() => setActiveTab('activities')}
+        >
+          <Text style={[styles.tabText, activeTab === 'activities' && styles.activeTabText]}>
+            ACTIVITIES
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'teams' && styles.activeTab]}
+          onPress={() => setActiveTab('teams')}
+        >
+          <Text style={[styles.tabText, activeTab === 'teams' && styles.activeTabText]}>
+            TEAMS
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'events' && styles.activeTab]}
+          onPress={() => setActiveTab('events')}
+        >
+          <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
+            EVENTS
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.content}>
+        <View style={styles.contentContainer}>
           {activeTab === 'activities' && (
             <View>
               <View style={styles.sectionHeader}>
@@ -236,8 +236,8 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.logoutContainer}>
-          <TouchableOpacity
-            style={styles.logoutButton}
+          <TouchableOpacity 
+            style={styles.logoutButton} 
             onPress={handleLogout}
             disabled={loading}
           >
@@ -259,7 +259,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#fff',
   },
   headerBackground: {
     height: 300,
@@ -299,126 +299,130 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   pageTitle: {
+    fontSize: 32,
+    fontWeight: '700',
     color: '#fff',
-    fontSize: 28,
-    fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 8,
   },
   tagline: {
-    color: '#fff',
     fontSize: 16,
-    opacity: 0.9,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
   },
   profileCard: {
     backgroundColor: 'white',
-    margin: 16,
     borderRadius: 12,
+    margin: 16,
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   profileAvatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#C41E3A',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
   profileAvatarText: {
-    fontSize: 24,
     color: 'white',
+    fontSize: 24,
     fontWeight: 'bold',
   },
   profileInfo: {
     flex: 1,
   },
   profileName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 5,
+    color: '#333',
+    marginBottom: 4,
   },
   profileDetails: {
     fontSize: 14,
-    color: '#666666',
+    color: '#666',
     marginBottom: 8,
   },
   badgeContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     flexWrap: 'wrap',
+    marginTop: 4,
     gap: 8,
   },
   rankBadge: {
-    backgroundColor: '#C41E3A',
-    paddingVertical: 4,
+    backgroundColor: '#FFF5F5',
     paddingHorizontal: 10,
-    borderRadius: 12,
-    marginRight: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
   },
   rankText: {
-    color: 'white',
+    color: '#C41E3A',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   minutesBadge: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 4,
+    backgroundColor: '#E3F2FD',
     paddingHorizontal: 10,
-    borderRadius: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
   },
   minutesText: {
-    color: 'white',
+    color: '#2196F3',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   contributionBadge: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 4,
+    backgroundColor: '#E8F5E9',
     paddingHorizontal: 10,
-    borderRadius: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
   },
   contributionText: {
-    color: 'white',
+    color: '#4CAF50',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-  tabs: {
+  tabContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 8,
-    marginHorizontal: 16,
-    marginTop: 8,
-    overflow: 'hidden',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    backgroundColor: '#fff',
   },
   tab: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
   },
   activeTab: {
+    borderBottomWidth: 2,
     borderBottomColor: '#2196F3',
   },
   tabText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#666666',
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#757575',
   },
   activeTabText: {
     color: '#2196F3',
   },
   content: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  contentContainer: {
     padding: 16,
     paddingBottom: 32,
   },
