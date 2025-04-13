@@ -8,7 +8,7 @@ const BADGE_SIZE = (Dimensions.get('window').width - 48) / 3;
 
 interface BadgeProps {
     name: string;
-    icon: string;
+    icon: any;
     iconType: 'fontawesome' | 'material' | 'ionicon' | 'emoji' | 'svg';
     emoji?: string;
     isUnlocked: boolean;
