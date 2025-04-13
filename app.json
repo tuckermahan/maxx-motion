@@ -10,7 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.maxxpotential.maxxmotion"
+      "bundleIdentifier": "com.maxxpotential.maxxmotion",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "This app requires access to your health data to track fitness metrics and provide personalized insights.",
+        "NSHealthUpdateUsageDescription": "This app requires permission to write health data for tracking your fitness activities."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -34,11 +38,36 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-health-connect",
+        {
+          "healthConnectPermissions": [
+            "READ_STEPS",
+            "WRITE_STEPS",
+            "READ_DISTANCE",
+            "WRITE_DISTANCE",
+            "READ_HEART_RATE",
+            "WRITE_HEART_RATE",
+            "READ_EXERCISE",
+            "WRITE_EXERCISE",
+            "READ_CALORIES",
+            "WRITE_CALORIES"
+          ]
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
     },
-    "scheme": "maxx-motion"
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "d7f1a372-150d-4bb1-b050-546f08c91171"
+      }
+    },
+    "owner": "tucker.mahan-org"
   }
 }

@@ -1,9 +1,10 @@
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
-
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
+import { StyleSheet, View, TouchableOpacity, ScrollView, Text } from 'react-native';
+import { useEffect } from 'react';
 import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/ThemedText';
+import { useAuth } from '@/lib/auth';
+import { useUser } from '@/contexts/UserContext';
 import { ImageBackground } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -109,8 +110,24 @@ export default function DashboardScreen() {
     }
   ];
 
+  const { user } = useAuth();
+  const { userProfile } = useUser();
+  
+  useEffect(() => {
+    console.log('📱 Dashboard loaded', { 
+      userId: user?.id,
+      email: user?.email,
+      hasProfile: !!userProfile
+    });
+  }, [user, userProfile]);
+
   return (
-    <ParallaxScrollView
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Dashboard</Text>
+        <Text style={styles.headerSubtitle}>Welcome back{userProfile?.full_name ? `, ${userProfile.full_name}` : ''}!</Text>
+      </View>
+      <ParallaxScrollView
       headerBackgroundColor={{ light: 'transparent', dark: 'transparent' }}
       headerImage={
         <ImageBackground
@@ -136,8 +153,6 @@ export default function DashboardScreen() {
           </LinearGradient>
         </ImageBackground>
       }>
-      
-      {/* Progress Section */}
       <ThemedView style={styles.section}>
         <ThemedText style={styles.sectionTitle}>Your Progress</ThemedText>
         <View style={styles.progressContainer}>
@@ -162,6 +177,8 @@ export default function DashboardScreen() {
         <TouchableOpacity style={styles.shareButton}>
           <ThemedText style={styles.shareButtonText}>Share</ThemedText>
         </TouchableOpacity>
+        <ThemedText type="subtitle">Your Activity</ThemedText>
+        <Text style={styles.comingSoon}>Activity summary coming soon</Text>
       </ThemedView>
       
       {/* Team Leaderboard Section */}
@@ -191,6 +208,8 @@ export default function DashboardScreen() {
             </ThemedText>
           </View>
         ))}
+        <ThemedText type="subtitle">Your Team</ThemedText>
+        <Text style={styles.comingSoon}>Team summary coming soon</Text>
       </ThemedView>
 
       {/* Recent Activities Section */}
@@ -208,13 +227,15 @@ export default function DashboardScreen() {
             <ThemedText style={styles.activitySource}>{activity.source}</ThemedText>
           </View>
         ))}
+        <ThemedText type="subtitle">Recent Achievements</ThemedText>
+        <Text style={styles.comingSoon}>Achievements coming soon</Text>
       </ThemedView>
 
       {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab}>
         <ThemedText style={styles.fabIcon}>+</ThemedText>
       </TouchableOpacity>
-    </ParallaxScrollView>
+    </ScrollView>
   );
 }
 
@@ -272,6 +293,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#C41E3A',
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f8f8',
+  },
+  header: {
+    backgroundColor: '#C41E3A',
+    padding: 20,
+    paddingTop: 60,
+    paddingBottom: 30,
   },
   pageTitle: {
     fontSize: 32,

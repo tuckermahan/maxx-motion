@@ -1,12 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+import * as Linking from 'expo-linking';
+
+// Make sure auth sessions know how to complete properly
+WebBrowser.maybeCompleteAuthSession();
 
 export function useGoogleAuth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [request, setRequest] = useState(true);
+
+  // Get the proper redirect URI
+  const getRedirectUri = () => {
+    // For web, we need the full origin URL
+    if (Platform.OS === 'web') {
+      return window.location.origin;
+    }
+    
+    // For iOS/Android
+    const scheme = Constants.expoConfig?.scheme || 'maxx-motion';
+    return `${scheme}://`;
+  };
+
+  // Check for auth state on mount for web platforms
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      // For web, check if we're coming back from an authentication redirect
+      const hasAuthParams = window.location.hash && 
+        (window.location.hash.includes('access_token') || 
+         window.location.hash.includes('error'));
+         
+      if (hasAuthParams) {
+        console.log('Auth params detected in URL');
+        // Let Supabase handle the token extraction
+        supabase.auth.getSession();
+      }
+    }
+  }, []);
 
   return {
     promptAsync: async () => {
@@ -14,12 +47,15 @@ export function useGoogleAuth() {
         setLoading(true);
         setError(null);
         
-        // The key issue is that we need to use a redirect URL that is registered with Google
-        // Supabase requires using their callback URL
+        console.log('Starting Google auth flow on', Platform.OS);
+        
+        // Generate the OAuth URL with Supabase
         const { data, error: authError } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            // No redirectTo - let Supabase use its default which is properly configured
+            redirectTo: getRedirectUri(),
+            // Only skip browser redirect for native platforms
+            skipBrowserRedirect: Platform.OS !== 'web',
             queryParams: {
               // Ensure we get a refresh token
               access_type: 'offline',
@@ -28,37 +64,50 @@ export function useGoogleAuth() {
         });
         
         if (authError) {
+          console.error('Auth error:', authError.message);
           throw authError;
         }
-        
-        console.log('OAuth URL generated:', data?.url);
         
         if (!data?.url) {
           throw new Error('No OAuth URL returned from Supabase');
         }
         
-        // Open the OAuth URL in a browser
-        if (Platform.OS !== 'web') {
+        console.log('OAuth URL generated, opening browser...');
+        
+        // Handle differently for web vs native
+        if (Platform.OS === 'web') {
+          // For web, open in the same window or a popup
+          window.location.href = data.url;
+          return true; // This will not actually return on web as the page redirects
+        } else {
+          // For native platforms, use WebBrowser
           const result = await WebBrowser.openAuthSessionAsync(
             data.url,
-            'maxx-motion://'
+            getRedirectUri(),
+            {
+              showInRecents: true,
+              createTask: true
+            }
           );
           
-          console.log('Auth result:', result.type);
+          console.log('Auth result type:', result.type);
           
-          if (result.type !== 'success') {
-            throw new Error('Authentication cancelled or failed');
+          // The browser was closed without completing auth
+          if (result.type === 'cancel' || result.type === 'dismiss') {
+            throw new Error('Authentication cancelled');
           }
-        } else {
-          // On web, we can just redirect
-          window.location.href = data.url;
+          
+          // Get the session immediately to check if we're logged in
+          const { data: session } = await supabase.auth.getSession();
+          
+          if (!session?.session) {
+            console.warn('No session found after authentication');
+            throw new Error('Authentication failed - no session found');
+          }
+          
+          console.log('Authentication successful, session established');
+          return true;
         }
-        
-        // We should only reach here in native apps
-        const { data: session } = await supabase.auth.getSession();
-        console.log('Session after auth:', session ? 'exists' : 'null');
-        
-        return true;
       } catch (e) {
         console.error('Authentication error:', e);
         setError((e as Error).message);
