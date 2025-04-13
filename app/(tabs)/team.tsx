@@ -553,32 +553,32 @@ export default function TeamScreen() {
         const results = teamMembers.filter(member => {
           const fullName = member.full_name.toLowerCase();
           const nameParts = fullName.split(' ');
-          
-          return fullName.includes(query) || 
-                 nameParts.some(part => part.includes(query));
+
+          return fullName.includes(query) ||
+            nameParts.some(part => part.includes(query));
         });
-        
+
         // Sort results by relevance
         results.sort((a, b) => {
           const aName = a.full_name.toLowerCase();
           const bName = b.full_name.toLowerCase();
-          
+
           // Exact matches first
           if (aName === query) return -1;
           if (bName === query) return 1;
-          
+
           // Then starts with
           if (aName.startsWith(query) && !bName.startsWith(query)) return -1;
           if (bName.startsWith(query) && !aName.startsWith(query)) return 1;
-          
+
           // Default to rank order
           return a.rank - b.rank;
         });
-        
+
         setFilteredMembers(results);
       }
     }, 300); // 300ms delay to debounce search input
-    
+
     return () => clearTimeout(debounceTimeout);
   }, [searchQuery, teamMembers]);
 
@@ -929,12 +929,12 @@ export default function TeamScreen() {
 
   const getMemberRowStyle = (memberId: string, index: number, isSearchResult: boolean) => {
     const isHovered = hoveredMemberId === memberId;
-    const backgroundColor = isHovered 
-      ? 'rgba(0, 0, 0, 0.15)' 
-      : index % 2 === 1 
-        ? 'rgba(0, 0, 0, 0.03)' 
+    const backgroundColor = isHovered
+      ? 'rgba(0, 0, 0, 0.15)'
+      : index % 2 === 1
+        ? 'rgba(0, 0, 0, 0.03)'
         : undefined;
-        
+
     return {
       backgroundColor,
       borderLeftWidth: isSearchResult && searchQuery.trim() !== '' ? 3 : 0,
@@ -1079,39 +1079,39 @@ export default function TeamScreen() {
             </View>
 
             <View style={styles.teamActions}>
-              <Pressable 
-                style={[styles.actionButton, hoveredButton === 'rank' && styles.actionButtonHovered]} 
+              <Pressable
+                style={[styles.actionButton, hoveredButton === 'rank' && styles.actionButtonHovered]}
                 onHoverIn={() => setHoveredButton('rank')}
                 onHoverOut={() => setHoveredButton(null)}
               >
                 <ThemedText style={[
-                  styles.actionButtonText, 
+                  styles.actionButtonText,
                   hoveredButton === 'rank' && styles.actionButtonTextHovered
                 ]}>RANK: {teamRank ? `${teamRank}${teamRank === 1 ? 'st' : teamRank === 2 ? 'nd' : teamRank === 3 ? 'rd' : 'th'}` : '...'}</ThemedText>
               </Pressable>
-              <Pressable 
-                style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]} 
+              <Pressable
+                style={[styles.actionButton, hoveredButton === 'edit' && styles.actionButtonHovered]}
                 onHoverIn={() => setHoveredButton('edit')}
                 onHoverOut={() => setHoveredButton(null)}
                 onPress={showGoalEditModal}
               >
                 <ThemedText style={[
-                  styles.actionButtonText, 
+                  styles.actionButtonText,
                   hoveredButton === 'edit' && styles.actionButtonTextHovered
                 ]}>EDIT GOAL</ThemedText>
               </Pressable>
-              <Pressable 
-                style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]} 
+              <Pressable
+                style={[styles.actionButton, hoveredButton === 'invite' && styles.actionButtonHovered]}
                 onHoverIn={() => setHoveredButton('invite')}
                 onHoverOut={() => setHoveredButton(null)}
               >
                 <ThemedText style={[
-                  styles.actionButtonText, 
+                  styles.actionButtonText,
                   hoveredButton === 'invite' && styles.actionButtonTextHovered
                 ]}>INVITE</ThemedText>
               </Pressable>
             </View>
-      </ThemedView>
+          </ThemedView>
 
           <ThemedView style={styles.card}>
             <ThemedText style={[styles.sectionTitle, { marginBottom: 16 }]}>Team Statistics</ThemedText>
@@ -1129,13 +1129,13 @@ export default function TeamScreen() {
                 <ThemedText style={styles.statLabel}>Weekly Growth</ThemedText>
               </View>
             </View>
-      </ThemedView>
+          </ThemedView>
 
           <ThemedView style={styles.card}>
             <View style={styles.membersHeader}>
               <ThemedText style={styles.sectionTitle}>Team Members</ThemedText>
-              <TextInput 
-                placeholder="Search members..." 
+              <TextInput
+                placeholder="Search members..."
                 style={styles.searchInput}
                 value={searchQuery}
                 onChangeText={handleSearch}
@@ -1148,11 +1148,11 @@ export default function TeamScreen() {
               <ThemedText style={styles.headerMinutes}>MINUTES</ThemedText>
               <ThemedText style={styles.headerContrib}>CONTRIB/RANK</ThemedText>
             </View>
-            
+
             <View style={styles.membersList}>
               {(searchQuery.trim() === '' ? displayedMembers : filteredMembers).map((member, index) => {
                 const isSearchResult = searchQuery.trim() !== '' && filteredMembers.includes(member);
-                
+
                 return (
                   <View key={member.id} style={styles.memberItemContainer}>
                     <Image
@@ -1190,7 +1190,7 @@ export default function TeamScreen() {
                   </View>
                 );
               })}
-              
+
               {searchQuery.trim() !== '' && filteredMembers.length === 0 && (
                 <View style={styles.noResultsContainer}>
                   <ThemedText style={styles.noResultsText}>
@@ -1209,11 +1209,11 @@ export default function TeamScreen() {
                 </ThemedText>
               </Pressable>
             )}
-      </ThemedView>
+          </ThemedView>
         </View>
       </ScrollView>
-      
-      <MemberDetails 
+
+      <MemberDetails
         isVisible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         member={selectedMember ? {
@@ -1264,447 +1264,4 @@ export default function TeamScreen() {
       </Modal>
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#333',
-  },
-  noTeamContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  noTeamTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  noTeamSubtext: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  joinButton: {
-    backgroundColor: '#C41E3A',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  joinButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  headerBackground: {
-    width: '100%',
-    height: 240,
-    resizeMode: 'cover',
-  },
-  gradientOverlay: {
-    flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Add light overlay for better text visibility
-  },
-  headerContent: {
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingBottom: 20,
-    alignItems: 'center',
-  },
-  headerTopBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-  },
-  appTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  logoContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#DC143C',
-  },
-  headerMainTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
-    marginTop: 40,
-    textAlign: 'center',
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: 'white',
-    opacity: 0.9,
-    textAlign: 'center',
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 100, // Extra padding to account for tab bar
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  teamInfo: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-    position: 'relative',
-    minHeight: 60,
-  },
-  teamIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    zIndex: 2,
-  },
-  teamIconText: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  teamDetails: {
-    flex: 1,
-    marginLeft: 76,  // Account for avatar width + margin
-  },
-  teamName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: '#333333',
-  },
-  teamSubtext: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  progressContainer: {
-    height: 4,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 2,
-    marginBottom: 8,
-  },
-  progressBar: {
-    position: 'absolute',
-    height: '100%',
-    backgroundColor: '#4CAF50',
-    borderRadius: 2,
-  },
-  progressText: {
-    fontSize: 14,
-    color: '#007AFF',
-    marginTop: 8,
-  },
-  teamActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginTop: 16,
-  },
-  actionButton: {
-    flex: 1,
-    padding: 8,
-    borderRadius: 20,
-    alignItems: 'center',
-    cursor: 'pointer',
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    backgroundColor: 'transparent',
-  },
-  actionButtonHovered: {
-    backgroundColor: '#007AFF',
-  },
-  actionButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#007AFF',
-  },
-  actionButtonTextHovered: {
-    color: 'white',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 0,
-    color: '#333333',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statCard: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: '#333333',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#666666',
-    fontWeight: '500',
-  },
-  membersHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  searchInput: {
-    backgroundColor: '#F5F5F5',
-    padding: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#BDBDBD',
-    width: '50%',
-    maxWidth: 300,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  headerMember: {
-    flex: 3,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#444444',
-  },
-  headerRole: {
-    flex: 2,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#444444',
-    textAlign: 'left',
-  },
-  headerMinutes: {
-    flex: 2,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#444444',
-    textAlign: 'center',
-  },
-  headerContrib: {
-    flex: 2,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#444444',
-    textAlign: 'right',
-  },
-  membersList: {
-    gap: 0,
-  },
-  memberItemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: 'relative',
-    minHeight: 64,
-    paddingLeft: 64,
-    marginBottom: 4,
-  },
-  memberItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    cursor: 'pointer',
-    marginLeft: 0,
-    borderRadius: 4,
-  },
-  memberItemAlt: {
-    backgroundColor: '#F8F9FA',
-  },
-  memberAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    position: 'absolute',
-    left: 16,
-    top: '50%',
-    transform: [{ translateY: -18 }],
-    zIndex: 3,
-  },
-  memberColumnContent: {
-    flex: 3,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 8,
-  },
-  roleColumnContent: {
-    flex: 2,
-    alignItems: 'flex-start',
-  },
-  minutesColumnContent: {
-    flex: 2,
-    alignItems: 'center',
-  },
-  contribColumnContent: {
-    flex: 2,
-    alignItems: 'flex-end',
-  },
-  memberDetails: {
-    flex: 1,
-    marginLeft: 0,
-    gap: 1,
-  },
-  memberName: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  memberRole: {
-    fontSize: 14,
-    color: '#666',
-  },
-  memberLastActive: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
-  },
-  memberMinutes: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  memberContribution: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  memberRank: {
-    fontSize: 12,
-    color: '#666666',
-    fontWeight: '500',
-  },
-  seeAllMembers: {
-    textAlign: 'center',
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 16,
-  },
-  memberItemSearchResult: {
-    borderLeftWidth: 3,
-    borderLeftColor: '#C41E3A',
-  },
-  
-  noResultsContainer: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  
-  noResultsText: {
-    fontSize: 16,
-    color: '#666666',
-    fontStyle: 'italic',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
-    maxWidth: 400,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#333',
-  },
-  goalInput: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  modalButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#f2f2f2',
-  },
-  cancelButtonText: {
-    color: '#666',
-    fontWeight: '600',
-  },
-  saveButton: {
-    backgroundColor: '#007AFF',
-  },
-  saveButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-}); 
+} 

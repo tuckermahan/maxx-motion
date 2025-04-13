@@ -124,17 +124,17 @@ export default function LeaderboardScreen() {
   const [showAllTeams, setShowAllTeams] = useState(false);
   const [showAllMembers, setShowAllMembers] = useState(false);
   const [activeTab, setActiveTab] = useState<'team' | 'user'>('team');
-  
+
   // Loading state
   const [loading, setLoading] = useState(true);
-  
+
   // Data state
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [topUsers, setTopUsers] = useState<EventUser[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [userTeamId, setUserTeamId] = useState<string | null>(null);
-  
+
   // Filter state
   const [filter, setFilter] = useState<'week' | 'cumulative'>('week');
   const [weekIndex, setWeekIndex] = useState<number>(0);
@@ -190,7 +190,7 @@ export default function LeaderboardScreen() {
       fetchUserTeamId();
     }
   }, [user, activeEvent]);
-  
+
   // Handle tab change
   useEffect(() => {
     if (activeTab === 'user' && activeEvent && topUsers.length === 0) {
@@ -203,33 +203,33 @@ export default function LeaderboardScreen() {
   // Calculate the weeks of the event
   const calculateWeeks = () => {
     if (!activeEvent) return;
-    
+
     const startDate = new Date(activeEvent.start_date);
     const endDate = new Date(activeEvent.end_date);
-    
+
     // Calculate total weeks in the event
     const diffTime = endDate.getTime() - startDate.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     const weeks = Math.ceil(diffDays / 7);
     setTotalWeeks(weeks);
-    
+
     // If week index is beyond total weeks, reset it
     if (weekIndex >= weeks) {
       setWeekIndex(0);
     }
-    
+
     // Calculate start and end dates for the selected week
     const selectedWeekStart = new Date(startDate);
     selectedWeekStart.setDate(startDate.getDate() + (weekIndex * 7));
-    
+
     const selectedWeekEnd = new Date(selectedWeekStart);
     selectedWeekEnd.setDate(selectedWeekStart.getDate() + 6);
-    
+
     // If week end is beyond event end, cap it
     if (selectedWeekEnd > endDate) {
       selectedWeekEnd.setTime(endDate.getTime());
     }
-    
+
     setWeekStart(selectedWeekStart);
     setWeekEnd(selectedWeekEnd);
   };
@@ -238,7 +238,7 @@ export default function LeaderboardScreen() {
   const fetchActiveEvent = async () => {
     try {
       setLoading(true);
-      
+
       // First try to find active event
       const { data: activeEvents, error: activeError } = await supabase
         .from('events')
@@ -246,18 +246,18 @@ export default function LeaderboardScreen() {
         .eq('status', 'Active')
         .order('start_date', { ascending: true })
         .limit(1);
-      
+
       if (activeError) {
         console.error('Error fetching active events:', activeError);
         return;
       }
-      
+
       if (activeEvents && activeEvents.length > 0) {
         console.log('Active event found:', activeEvents[0].name);
         setActiveEvent(activeEvents[0]);
         return;
       }
-      
+
       // If no active event, look for upcoming event
       const { data: upcomingEvents, error: upcomingError } = await supabase
         .from('events')
@@ -265,18 +265,18 @@ export default function LeaderboardScreen() {
         .eq('status', 'Upcoming')
         .order('start_date', { ascending: true })
         .limit(1);
-      
+
       if (upcomingError) {
         console.error('Error fetching upcoming events:', upcomingError);
         return;
       }
-      
+
       if (upcomingEvents && upcomingEvents.length > 0) {
         console.log('Upcoming event found:', upcomingEvents[0].name);
         setActiveEvent(upcomingEvents[0]);
         return;
       }
-      
+
       // If no active or upcoming events, use the most recent archived event
       const { data: archivedEvents, error: archivedError } = await supabase
         .from('events')
@@ -284,12 +284,12 @@ export default function LeaderboardScreen() {
         .eq('status', 'Archive')
         .order('end_date', { ascending: false })
         .limit(1);
-      
+
       if (archivedError) {
         console.error('Error fetching archived events:', archivedError);
         return;
       }
-      
+
       if (archivedEvents && archivedEvents.length > 0) {
         console.log('Archived event found:', archivedEvents[0].name);
         setActiveEvent(archivedEvents[0]);
@@ -306,7 +306,7 @@ export default function LeaderboardScreen() {
   // Find the user's team ID for the active event
   const fetchUserTeamId = async () => {
     if (!user || !activeEvent) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('team_members')
@@ -314,12 +314,12 @@ export default function LeaderboardScreen() {
         .eq('user_id', user.id)
         .eq('teams.event_id', activeEvent.id)
         .limit(1);
-      
+
       if (error) {
         console.error('Error fetching user team ID:', error);
         return;
       }
-      
+
       if (data && data.length > 0) {
         console.log('User team ID found:', data[0].team_id);
         setUserTeamId(data[0].team_id);
@@ -335,27 +335,27 @@ export default function LeaderboardScreen() {
   // Fetch teams for the event with updated filtering
   const fetchTeams = async () => {
     if (!activeEvent) return;
-    
+
     try {
       setLoading(true);
-      
+
       // Get all teams in the event
       const { data: eventTeams, error: teamsError } = await supabase
         .from('teams')
         .select('id, team_name, team_minute_goal, event_id')
         .eq('event_id', activeEvent.id);
-      
+
       if (teamsError) {
         console.error('Error fetching teams:', teamsError);
         return;
       }
-      
+
       if (!eventTeams || eventTeams.length === 0) {
         console.log('No teams found for this event');
         setTeams([]);
         return;
       }
-      
+
       // For each team, get member count and calculate total minutes
       const teamsWithDetails = await Promise.all(eventTeams.map(async (team) => {
         // Get team members count
@@ -363,15 +363,15 @@ export default function LeaderboardScreen() {
           .from('team_members')
           .select('id', { count: 'exact' })
           .eq('team_id', team.id);
-        
+
         const memberCount = membersError ? 0 : (membersData?.length || 0);
-        
+
         // Get team members
         const { data: teamMemberIds, error: teamMembersError } = await supabase
           .from('team_members')
           .select('user_id')
           .eq('team_id', team.id);
-        
+
         if (teamMembersError || !teamMemberIds || teamMemberIds.length === 0) {
           return {
             id: team.id,
@@ -383,32 +383,32 @@ export default function LeaderboardScreen() {
             isUserTeam: team.id === userTeamId
           };
         }
-        
+
         const userIds = teamMemberIds.map(m => m.user_id);
-        
+
         // Get activities for these users based on filter
         let query = supabase
           .from('activities')
           .select('activity_minutes, activity_date')
           .eq('event_id', activeEvent.id)
           .in('user_id', userIds);
-        
+
         // Apply time filter based on selection
         if (filter === 'week' && weekStart && weekEnd) {
           // Format dates to ISO strings
           const formattedStartDate = weekStart.toISOString().split('T')[0];
           const formattedEndDate = weekEnd.toISOString().split('T')[0];
-          
+
           // Filter by activity_date between week boundaries
           query = query
             .gte('activity_date', formattedStartDate)
             .lte('activity_date', formattedEndDate);
-            
+
           console.log(`Filtering activities from ${formattedStartDate} to ${formattedEndDate}`);
         }
-        
+
         const { data: activities, error: activitiesError } = await query;
-        
+
         if (activitiesError) {
           console.error(`Error fetching activities for team ${team.id}:`, activitiesError);
           return {
@@ -421,14 +421,14 @@ export default function LeaderboardScreen() {
             isUserTeam: team.id === userTeamId
           };
         }
-        
-        const totalMinutes = activities?.reduce((sum, activity) => 
+
+        const totalMinutes = activities?.reduce((sum, activity) =>
           sum + activity.activity_minutes, 0) || 0;
-        
+
         console.log(`Team ${team.team_name}: ${totalMinutes} minutes (${filter}, week ${weekIndex + 1})`);
-        
+
         const minutesPerMember = memberCount > 0 ? Math.round(totalMinutes / memberCount) : 0;
-        
+
         return {
           id: team.id,
           rank: 0, // Will be set after sorting
@@ -439,13 +439,13 @@ export default function LeaderboardScreen() {
           isUserTeam: team.id === userTeamId
         };
       }));
-      
+
       // Sort by total minutes (descending) and assign ranks
       teamsWithDetails.sort((a, b) => b.totalMinutes - a.totalMinutes);
       teamsWithDetails.forEach((team, index) => {
         team.rank = index + 1;
       });
-      
+
       setTeams(teamsWithDetails);
     } catch (err) {
       console.error('Error in fetchTeams:', err);
@@ -457,10 +457,10 @@ export default function LeaderboardScreen() {
   // Fetch top users across the entire event
   const fetchTopUsers = async () => {
     if (!activeEvent || !user) return;
-    
+
     try {
       setLoading(true);
-      
+
       // Get all profiles with activities in the event and their team info
       let query = supabase
         .from('activities')
@@ -471,35 +471,35 @@ export default function LeaderboardScreen() {
           profiles:user_id(id, full_name, avatar_url)
         `)
         .eq('event_id', activeEvent.id);
-      
+
       // Apply time filter if weekly
       if (filter === 'week' && weekStart && weekEnd) {
         // Format dates to ISO strings
         const formattedStartDate = weekStart.toISOString().split('T')[0];
         const formattedEndDate = weekEnd.toISOString().split('T')[0];
-        
+
         // Filter by activity_date between week boundaries
         query = query
           .gte('activity_date', formattedStartDate)
           .lte('activity_date', formattedEndDate);
-          
+
         console.log(`Filtering user activities from ${formattedStartDate} to ${formattedEndDate}`);
       }
-      
+
       const { data: activities, error: activitiesError } = await query;
-      
+
       if (activitiesError) {
         console.error('Error fetching user activities:', activitiesError);
         setTopUsers([]);
         return;
       }
-      
+
       if (!activities || activities.length === 0) {
         console.log('No user activities found');
         setTopUsers([]);
         return;
       }
-      
+
       // Aggregate minutes by user
       const userMap = new Map<string, {
         id: string;
@@ -507,19 +507,19 @@ export default function LeaderboardScreen() {
         totalMinutes: number;
         avatar_url: string | null;
       }>();
-      
+
       activities.forEach(activity => {
         if (!activity.profiles) return;
-        
-        const profile = Array.isArray(activity.profiles) 
-          ? activity.profiles[0] 
+
+        const profile = Array.isArray(activity.profiles)
+          ? activity.profiles[0]
           : activity.profiles;
-          
+
         if (!profile) return;
-        
+
         const userId = activity.user_id;
         const existingUser = userMap.get(userId);
-        
+
         if (existingUser) {
           existingUser.totalMinutes += activity.activity_minutes;
         } else {
@@ -531,10 +531,10 @@ export default function LeaderboardScreen() {
           });
         }
       });
-      
+
       // Get user IDs to fetch team info
       const userIds = Array.from(userMap.keys());
-      
+
       // Get team info for these users in this event
       const { data: teamMembers, error: teamError } = await supabase
         .from('team_members')
@@ -544,7 +544,7 @@ export default function LeaderboardScreen() {
         `)
         .in('user_id', userIds)
         .eq('teams.event_id', activeEvent.id);
-      
+
       // Create mapping of user ID to team name
       const userTeamMap = new Map<string, string>();
       if (teamMembers && !teamError) {
@@ -555,7 +555,7 @@ export default function LeaderboardScreen() {
           }
         });
       }
-      
+
       // Convert map to array and sort by minutes
       const userArray = Array.from(userMap.values())
         .sort((a, b) => b.totalMinutes - a.totalMinutes)
@@ -566,9 +566,9 @@ export default function LeaderboardScreen() {
           isCurrentUser: userInfo.id === user.id,
           teamName: userTeamMap.get(userInfo.id) || 'No Team'
         }));
-      
+
       setTopUsers(userArray);
-      
+
       console.log(`Loaded ${userArray.length} top users for the event`);
     } catch (err) {
       console.error('Error fetching top users:', err);
@@ -581,65 +581,65 @@ export default function LeaderboardScreen() {
   // Fetch team members with updated filtering
   const fetchTeamMembers = async () => {
     if (!userTeamId || !activeEvent) return;
-    
+
     try {
       // Get all team members
       const { data: members, error: membersError } = await supabase
         .from('team_members')
         .select('user_id, profiles!inner(id, full_name, avatar_url)')
         .eq('team_id', userTeamId);
-      
+
       if (membersError) {
         console.error('Error fetching team members:', membersError);
         return;
       }
-      
+
       if (!members || members.length === 0) {
         console.log('No team members found');
         setTeamMembers([]);
         return;
       }
-      
+
       // Get activities for all team members
       const userIds = members.map(m => m.user_id);
-      
+
       // Apply time filter based on selection
       let query = supabase
         .from('activities')
         .select('user_id, activity_minutes, activity_date')
         .eq('event_id', activeEvent.id)
         .in('user_id', userIds);
-      
+
       if (filter === 'week' && weekStart && weekEnd) {
         // Format dates to ISO strings
         const formattedStartDate = weekStart.toISOString().split('T')[0];
         const formattedEndDate = weekEnd.toISOString().split('T')[0];
-        
+
         // Filter by activity_date between week boundaries
         query = query
           .gte('activity_date', formattedStartDate)
           .lte('activity_date', formattedEndDate);
       }
-      
+
       const { data: activities, error: activitiesError } = await query;
-      
+
       if (activitiesError) {
         console.error('Error fetching member activities:', activitiesError);
         return;
       }
-      
+
       // Calculate minutes for each member
       const memberMinutes: { [key: string]: number } = {};
-      
+
       activities?.forEach(activity => {
         memberMinutes[activity.user_id] = (memberMinutes[activity.user_id] || 0) + activity.activity_minutes;
       });
-      
+
       // Map members with their minutes
       const mappedMembers: TeamMember[] = members.map(member => {
         const profileData = member.profiles;
         const profile = Array.isArray(profileData) ? profileData[0] : profileData;
-        
+
         return {
           id: member.user_id,
           name: profile?.full_name || 'Unknown User',
@@ -648,13 +648,13 @@ export default function LeaderboardScreen() {
           isCurrentUser: member.user_id === user?.id
         };
       });
-      
+
       // Sort by minutes (descending) and assign ranks
       mappedMembers.sort((a, b) => b.totalMinutes - a.totalMinutes);
       mappedMembers.forEach((member, index) => {
         member.rank = index + 1;
       });
-      
+
       setTeamMembers(mappedMembers);
     } catch (err) {
       console.error('Error in fetchTeamMembers:', err);
@@ -679,12 +679,12 @@ export default function LeaderboardScreen() {
   // Handle filter change
   const handleFilterChange = (newFilter: 'week' | 'cumulative') => {
     setFilter(newFilter);
-    
+
     // If switching to week view, ensure we have valid week boundaries
     if (newFilter === 'week' && activeEvent && (!weekStart || !weekEnd)) {
       calculateWeeks();
     }
-    
+
     // Show week selector if choosing week filter
     if (newFilter === 'week') {
       setWeekSelectorVisible(true);
@@ -718,10 +718,10 @@ export default function LeaderboardScreen() {
   // Get week label
   const getWeekLabel = () => {
     if (!weekStart || !weekEnd) return 'This Week';
-    
+
     const startStr = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const endStr = weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    
+
     return `Week ${weekIndex + 1} (${startStr} - ${endStr})`;
   };
 
@@ -783,7 +783,7 @@ export default function LeaderboardScreen() {
           <View style={styles.challengeInfo}>
             <Text style={styles.challengeTitle}>{activeEvent.name}</Text>
             <Text style={styles.challengeDates}>
-              {formatDate(activeEvent.start_date)} - {formatDate(activeEvent.end_date)} 
+              {formatDate(activeEvent.start_date)} - {formatDate(activeEvent.end_date)}
               {activeEvent.status === 'Active' && ` • ${calculateDaysRemaining(activeEvent.end_date)} days remaining`}
             </Text>
           </View>
@@ -797,9 +797,9 @@ export default function LeaderboardScreen() {
         <TouchableOpacity style={styles.filterButton}>
           <Text style={styles.filterButtonText}>Filter</Text>
         </TouchableOpacity>
-        
+
         {/* Week filter with selector */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.filterButton, filter === 'week' && styles.activeFilter]}
           onPress={() => handleFilterChange('week')}
         >
@@ -807,15 +807,15 @@ export default function LeaderboardScreen() {
             {filter === 'week' ? getWeekLabel() : 'Weekly'}
           </Text>
         </TouchableOpacity>
-        
+
         {/* Cumulative filter */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.filterButton, filter === 'cumulative' && styles.activeFilter]}
           onPress={() => handleFilterChange('cumulative')}
         >
           <Text style={[styles.filterButtonText, filter === 'cumulative' && styles.activeFilterText]}>Cumulative</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
           <Text style={styles.refreshButtonText}>REFRESH</Text>
         </TouchableOpacity>
@@ -824,19 +824,19 @@ export default function LeaderboardScreen() {
       {/* Week selector navigation */}
       {filter === 'week' && (
         <View style={styles.weekSelectorRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.weekNavButton, weekIndex === 0 && styles.weekNavButtonDisabled]}
             onPress={handlePreviousWeek}
             disabled={weekIndex === 0}
           >
             <FontAwesome name="chevron-left" size={16} color={weekIndex === 0 ? "#CCCCCC" : "#2196F3"} />
           </TouchableOpacity>
-          
+
           <Text style={styles.weekSelectorText}>
             Week {weekIndex + 1} of {totalWeeks}
           </Text>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[styles.weekNavButton, weekIndex === totalWeeks - 1 && styles.weekNavButtonDisabled]}
             onPress={handleNextWeek}
             disabled={weekIndex === totalWeeks - 1}
@@ -1019,39 +1019,39 @@ export default function LeaderboardScreen() {
                   </View>
                 </View>
               ))}
-              
+
               {/* Show the current user if not in top 10 */}
-              {user && !topUsers.slice(0, 10).some(u => u.isCurrentUser) && 
+              {user && !topUsers.slice(0, 10).some(u => u.isCurrentUser) &&
                 topUsers.find(u => u.isCurrentUser) && (
-                <View style={styles.currentUserSeparator}>
-                  <Text style={styles.currentUserSeparatorText}>Your Ranking</Text>
-                </View>
-              )}
-              
-              {user && !topUsers.slice(0, 10).some(u => u.isCurrentUser) && 
-                topUsers.find(u => u.isCurrentUser) && (
-                <View style={[styles.memberItem, styles.currentUserItem]}>
-                  <View style={styles.memberRankContainer}>
-                    <Text style={[styles.memberRankText, styles.currentUserRankText]}>
-                      {topUsers.find(u => u.isCurrentUser)?.rank || ''}
-                    </Text>
+                  <View style={styles.currentUserSeparator}>
+                    <Text style={styles.currentUserSeparatorText}>Your Ranking</Text>
                   </View>
-                  <View style={styles.memberInfo}>
-                    <View style={styles.memberNameContainer}>
-                      <Text style={[styles.memberName, styles.currentUserText]}>
-                        {topUsers.find(u => u.isCurrentUser)?.name || ''}
-                        <Text style={styles.youBadge}> (You)</Text>
-                      </Text>
-                      <Text style={styles.teamNameText}>
-                        {topUsers.find(u => u.isCurrentUser)?.teamName || ''}
+                )}
+
+              {user && !topUsers.slice(0, 10).some(u => u.isCurrentUser) &&
+                topUsers.find(u => u.isCurrentUser) && (
+                  <View style={[styles.memberItem, styles.currentUserItem]}>
+                    <View style={styles.memberRankContainer}>
+                      <Text style={[styles.memberRankText, styles.currentUserRankText]}>
+                        {topUsers.find(u => u.isCurrentUser)?.rank || ''}
                       </Text>
                     </View>
-                    <Text style={styles.memberMinutes}>
-                      {topUsers.find(u => u.isCurrentUser)?.totalMinutes || 0} mins
-                    </Text>
+                    <View style={styles.memberInfo}>
+                      <View style={styles.memberNameContainer}>
+                        <Text style={[styles.memberName, styles.currentUserText]}>
+                          {topUsers.find(u => u.isCurrentUser)?.name || ''}
+                          <Text style={styles.youBadge}> (You)</Text>
+                        </Text>
+                        <Text style={styles.teamNameText}>
+                          {topUsers.find(u => u.isCurrentUser)?.teamName || ''}
+                        </Text>
+                      </View>
+                      <Text style={styles.memberMinutes}>
+                        {topUsers.find(u => u.isCurrentUser)?.totalMinutes || 0} mins
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              )}
+                )}
             </>
           ) : (
             <View style={styles.noDataContainer}>
