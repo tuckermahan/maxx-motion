@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, Image, Pressable, Platform, ImageBackground, Text } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import MemberDetails from '@/app/screens/MemberDetails';
 
 type TeamMember = {
   id: string; // UUID from team_members table
@@ -26,6 +27,10 @@ export default function TeamScreen() {
   const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const [showAllMembers, setShowAllMembers] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredMembers, setFilteredMembers] = useState<TeamMember[]>([]);
 
   const teamStats = {
     totalMinutes: 2650,
@@ -186,42 +191,71 @@ export default function TeamScreen() {
 
   const progressPercentage = (teamStats.totalMinutes / teamStats.targetMinutes) * 100;
 
-  // Map of animated styles for each member
-  const memberRowStyles = allTeamMembers.reduce((styles, member) => {
-    styles[member.id] = useAnimatedStyle(() => {
-      const isHovered = hoveredMemberId === member.id;
-      return {
-        transform: [{
-          scale: withSpring(isHovered ? 1.01 : 1, {
-            mass: 0.5,
-            damping: 15,
-            stiffness: 120,
-          }),
-        }],
-        backgroundColor: isHovered ? 'rgba(0, 0, 0, 0.15)' : undefined,
-      };
-    });
-    return styles;
-  }, {} as { [key: string]: any });
+  // Update the useEffect to debounce search and prevent performance issues
+  useEffect(() => {
+    const debounceTimeout = setTimeout(() => {
+      if (searchQuery.trim() === '') {
+        setFilteredMembers(displayedMembers);
+      } else {
+        const query = searchQuery.toLowerCase().trim();
+        const results = allTeamMembers.filter(member => {
+          const fullName = member.full_name.toLowerCase();
+          const nameParts = fullName.split(' ');
+          
+          return fullName.includes(query) || 
+                 nameParts.some(part => part.includes(query));
+        });
+        
+        // Sort results by relevance
+        results.sort((a, b) => {
+          const aName = a.full_name.toLowerCase();
+          const bName = b.full_name.toLowerCase();
+          
+          // Exact matches first
+          if (aName === query) return -1;
+          if (bName === query) return 1;
+          
+          // Then starts with
+          if (aName.startsWith(query) && !bName.startsWith(query)) return -1;
+          if (bName.startsWith(query) && !aName.startsWith(query)) return 1;
+          
+          // Default to rank order
+          return a.rank - b.rank;
+        });
+        
+        setFilteredMembers(results);
+      }
+    }, 300); // 300ms delay to debounce search input
+    
+    return () => clearTimeout(debounceTimeout);
+  }, [searchQuery, displayedMembers, allTeamMembers]);
+
+  // Optimize memberRowStyles computation to use a stable reference
+  const getMemberRowStyle = (memberId: string, index: number, isSearchResult: boolean) => {
+    const isHovered = hoveredMemberId === memberId;
+    const backgroundColor = isHovered 
+      ? 'rgba(0, 0, 0, 0.15)' 
+      : index % 2 === 1 
+        ? 'rgba(0, 0, 0, 0.03)' 
+        : undefined;
+        
+    return {
+      backgroundColor,
+      borderLeftWidth: isSearchResult && searchQuery.trim() !== '' ? 3 : 0,
+      borderLeftColor: '#C41E3A',
+    };
+  };
 
   const handleMemberPress = (member: TeamMember) => {
-    // Navigate to member details with params
-    router.push({
-      pathname: '/screens/MemberDetails',
-      params: {
-        full_name: member.full_name,
-        joined_at: member.joined_at,
-        rank: member.rank.toString(),
-        total_minutes: member.total_minutes.toString(),
-        activities_logged: Math.floor(member.total_minutes / 30).toString(), // Mock data
-        current_milestone: `${Math.floor(member.total_minutes / 100) * 100} minutes`,
-        contribution_percentage: member.contribution_percentage,
-        avatar_url: member.avatar_url,
-      }
-    });
+    setSelectedMember(member);
+    setIsModalVisible(true);
   };
 
   const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+  const handleSearch = (text: string) => {
+    setSearchQuery(text);
+  };
 
   return (
     <View style={styles.container}>
@@ -322,7 +356,9 @@ export default function TeamScreen() {
               <ThemedText style={styles.sectionTitle}>Team Members</ThemedText>
               <TextInput 
                 placeholder="Search members..." 
-                style={styles.searchInput} 
+                style={styles.searchInput}
+                value={searchQuery}
+                onChangeText={handleSearch}
               />
             </View>
 
@@ -334,53 +370,83 @@ export default function TeamScreen() {
             </View>
             
             <View style={styles.membersList}>
-              {displayedMembers.map((member, index) => (
-                <View key={member.id} style={[styles.memberItemContainer, index % 2 === 1 && styles.memberItemAlt]}>
-                  <Image
-                    source={{ uri: member.avatar_url || undefined }}
-                    style={styles.memberAvatar}
-                  />
-                  <AnimatedPressable
-                    onHoverIn={() => setHoveredMemberId(member.id)}
-                    onHoverOut={() => setHoveredMemberId(null)}
-                    onPress={() => handleMemberPress(member)}
-                    style={[
-                      styles.memberItem,
-                      memberRowStyles[member.id],
-                    ]}
-                  >
-                    <View style={styles.memberColumnContent}>
-                      <View style={styles.memberDetails}>
-                        <ThemedText style={styles.memberName}>{member.full_name}</ThemedText>
-                        <ThemedText style={styles.memberLastActive}>
-                          Active since {new Date(member.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </ThemedText>
+              {(searchQuery.trim() === '' ? displayedMembers : filteredMembers).map((member, index) => {
+                const isSearchResult = searchQuery.trim() !== '' && filteredMembers.includes(member);
+                
+                return (
+                  <View key={member.id} style={styles.memberItemContainer}>
+                    <Image
+                      source={{ uri: member.avatar_url || undefined }}
+                      style={styles.memberAvatar}
+                    />
+                    <Pressable
+                      onHoverIn={() => setHoveredMemberId(member.id)}
+                      onHoverOut={() => setHoveredMemberId(null)}
+                      onPress={() => handleMemberPress(member)}
+                      style={[
+                        styles.memberItem,
+                        getMemberRowStyle(member.id, index, isSearchResult)
+                      ]}
+                    >
+                      <View style={styles.memberColumnContent}>
+                        <View style={styles.memberDetails}>
+                          <ThemedText style={styles.memberName}>{member.full_name}</ThemedText>
+                          <ThemedText style={styles.memberLastActive}>
+                            Active since {new Date(member.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </ThemedText>
+                        </View>
                       </View>
-                    </View>
-                    <View style={styles.roleColumnContent}>
-                      <ThemedText style={styles.memberRole}>{member.is_captain ? 'Captain' : 'Member'}</ThemedText>
-                    </View>
-                    <View style={styles.minutesColumnContent}>
-                      <ThemedText style={styles.memberMinutes}>{member.total_minutes}</ThemedText>
-                    </View>
-                    <View style={styles.contribColumnContent}>
-                      <ThemedText style={styles.memberContribution}>{member.contribution_percentage}</ThemedText>
-                      <ThemedText style={styles.memberRank}>#{member.rank}</ThemedText>
-                    </View>
-                  </AnimatedPressable>
+                      <View style={styles.roleColumnContent}>
+                        <ThemedText style={styles.memberRole}>{member.is_captain ? 'Captain' : 'Member'}</ThemedText>
+                      </View>
+                      <View style={styles.minutesColumnContent}>
+                        <ThemedText style={styles.memberMinutes}>{member.total_minutes}</ThemedText>
+                      </View>
+                      <View style={styles.contribColumnContent}>
+                        <ThemedText style={styles.memberContribution}>{member.contribution_percentage}</ThemedText>
+                        <ThemedText style={styles.memberRank}>#{member.rank}</ThemedText>
+                      </View>
+                    </Pressable>
+                  </View>
+                );
+              })}
+              
+              {searchQuery.trim() !== '' && filteredMembers.length === 0 && (
+                <View style={styles.noResultsContainer}>
+                  <ThemedText style={styles.noResultsText}>
+                    No members found matching "{searchQuery}"
+                  </ThemedText>
                 </View>
-              ))}
+              )}
             </View>
-            <Pressable 
-              onPress={() => setShowAllMembers(!showAllMembers)}
-            >
-              <ThemedText style={styles.seeAllMembers}>
-                {showAllMembers ? 'SHOW LESS' : 'SEE ALL MEMBERS (12)'}
-              </ThemedText>
-            </Pressable>
+            
+            {searchQuery.trim() === '' && (
+              <Pressable 
+                onPress={() => setShowAllMembers(!showAllMembers)}
+              >
+                <ThemedText style={styles.seeAllMembers}>
+                  {showAllMembers ? 'SHOW LESS' : 'SEE ALL MEMBERS (12)'}
+                </ThemedText>
+              </Pressable>
+            )}
       </ThemedView>
         </View>
       </ScrollView>
+      
+      <MemberDetails 
+        isVisible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        member={selectedMember ? {
+          full_name: selectedMember.full_name,
+          joined_at: selectedMember.joined_at,
+          rank: selectedMember.rank,
+          total_minutes: selectedMember.total_minutes,
+          activities_logged: Math.floor(selectedMember.total_minutes / 30), // Mock data
+          current_milestone: `${Math.floor(selectedMember.total_minutes / 100) * 100} minutes`,
+          contribution_percentage: selectedMember.contribution_percentage,
+          avatar_url: selectedMember.avatar_url || '',
+        } : null}
+      />
     </View>
   );
 }
@@ -627,12 +693,13 @@ const styles = StyleSheet.create({
     position: 'relative',
     minHeight: 64,
     paddingLeft: 64,
+    marginBottom: 4,
   },
   memberItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     cursor: 'pointer',
     marginLeft: 0,
@@ -709,5 +776,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginTop: 16,
+  },
+  memberItemSearchResult: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#C41E3A',
+  },
+  
+  noResultsContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  
+  noResultsText: {
+    fontSize: 16,
+    color: '#666666',
+    fontStyle: 'italic',
   },
 }); 

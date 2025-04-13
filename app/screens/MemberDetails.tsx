@@ -1,140 +1,158 @@
 import React from 'react';
-import { StyleSheet, View, Pressable } from 'react-native';
-import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
+import { StyleSheet, View, Pressable, Modal } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
-export default function MemberDetails() {
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  
-  // Extract member data from params
-  const member = {
-    full_name: params.full_name as string,
-    joined_at: params.joined_at as string,
-    rank: Number(params.rank),
-    total_minutes: Number(params.total_minutes),
-    activities_logged: Number(params.activities_logged),
-    current_milestone: params.current_milestone as string,
-    contribution_percentage: params.contribution_percentage as string,
-    avatar_url: params.avatar_url as string,
-  };
+type MemberDetailsProps = {
+  isVisible: boolean;
+  onClose: () => void;
+  member: {
+    full_name: string;
+    joined_at: string;
+    rank: number;
+    total_minutes: number;
+    activities_logged: number;
+    current_milestone: string;
+    contribution_percentage: string;
+    avatar_url: string;
+  } | null;
+}
 
+export default function MemberDetails({ isVisible, onClose, member }: MemberDetailsProps) {
+  if (!member) return null;
+  
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.header}>
-          <View style={styles.headerContent}>
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={isVisible}
+      onRequestClose={onClose}
+    >
+      <ThemedView style={styles.modalContainer}>
+        <ThemedView style={styles.modalContent}>
+          <ThemedView style={styles.header}>
+            <ThemedText style={styles.headerTitle}>Member Details</ThemedText>
             <Pressable 
-              onPress={() => router.back()} 
-              style={styles.backButton}
+              onPress={onClose} 
+              style={styles.closeButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <IconSymbol
-                name="chevron.left"
-                size={28}
-                color="white"
-              />
+              <View style={styles.closeButtonContainer}>
+                <ThemedText style={styles.closeX}>✕</ThemedText>
+              </View>
             </Pressable>
-            <ThemedText style={styles.headerTitle}>Member Details</ThemedText>
-          </View>
-        </ThemedView>
+          </ThemedView>
 
-        <ThemedView style={styles.card}>
-          <View style={styles.memberHeader}>
-            <View style={styles.avatar}>
-              <ThemedText style={styles.avatarText}>
-                {member.full_name.split(' ').map(n => n[0]).join('')}
-              </ThemedText>
+          <ThemedView style={styles.content}>
+            <View style={styles.memberHeader}>
+              <View style={styles.avatar}>
+                <ThemedText style={styles.avatarText}>
+                  {member.full_name.split(' ').map(n => n[0]).join('')}
+                </ThemedText>
+              </View>
+              <View style={styles.memberInfo}>
+                <ThemedText style={styles.memberName}>{member.full_name}</ThemedText>
+                <ThemedText style={styles.memberSubtext}>
+                  Member since {new Date(member.joined_at).toLocaleDateString('en-US', { 
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </ThemedText>
+                <ThemedText style={styles.memberSubtext}>Team Rank: #{member.rank}</ThemedText>
+              </View>
             </View>
-            <View style={styles.memberInfo}>
-              <ThemedText style={styles.memberName}>{member.full_name}</ThemedText>
-              <ThemedText style={styles.memberSubtext}>
-                Member since {new Date(member.joined_at).toLocaleDateString('en-US', { 
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </ThemedText>
-              <ThemedText style={styles.memberSubtext}>Team Rank: #{member.rank}</ThemedText>
-            </View>
-          </View>
 
-          <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>Activity Summary</ThemedText>
-            <View style={styles.summaryItem}>
-              <ThemedText style={styles.summaryLabel}>Total Minutes:</ThemedText>
-              <ThemedText style={styles.summaryValue}>{member.total_minutes}</ThemedText>
+            <View style={styles.section}>
+              <ThemedText style={styles.sectionTitle}>Activity Summary</ThemedText>
+              <View style={styles.summaryItem}>
+                <ThemedText style={styles.summaryLabel}>Total Minutes:</ThemedText>
+                <ThemedText style={styles.summaryValue}>{member.total_minutes}</ThemedText>
+              </View>
+              <View style={styles.summaryItem}>
+                <ThemedText style={styles.summaryLabel}>Activities Logged:</ThemedText>
+                <ThemedText style={styles.summaryValue}>{member.activities_logged}</ThemedText>
+              </View>
+              <View style={styles.summaryItem}>
+                <ThemedText style={styles.summaryLabel}>Current Milestone:</ThemedText>
+                <ThemedText style={styles.summaryValue}>{member.current_milestone}</ThemedText>
+              </View>
+              <View style={styles.summaryItem}>
+                <ThemedText style={styles.summaryLabel}>Team Contribution:</ThemedText>
+                <ThemedText style={styles.summaryValue}>{member.contribution_percentage}</ThemedText>
+              </View>
             </View>
-            <View style={styles.summaryItem}>
-              <ThemedText style={styles.summaryLabel}>Activities Logged:</ThemedText>
-              <ThemedText style={styles.summaryValue}>{member.activities_logged}</ThemedText>
-            </View>
-            <View style={styles.summaryItem}>
-              <ThemedText style={styles.summaryLabel}>Current Milestone:</ThemedText>
-              <ThemedText style={styles.summaryValue}>{member.current_milestone}</ThemedText>
-            </View>
-            <View style={styles.summaryItem}>
-              <ThemedText style={styles.summaryLabel}>Team Contribution:</ThemedText>
-              <ThemedText style={styles.summaryValue}>{member.contribution_percentage}</ThemedText>
-            </View>
-          </View>
+          </ThemedView>
         </ThemedView>
       </ThemedView>
-    </>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  modalContainer: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '90%',
+    maxWidth: 500,
+    borderRadius: 8,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
   },
   header: {
-    backgroundColor: '#DC143C',
-    paddingTop: 48,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-  },
-  headerContent: {
-    flexDirection: 'row',
+    backgroundColor: '#C41E3A',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    justifyContent: 'center',
     position: 'relative',
-    height: 32,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
   },
-  backButton: {
+  closeButton: {
     position: 'absolute',
-    left: 0,
-    alignSelf: 'center',
-    padding: 8,
+    right: 12,
+    top: 12,
+    zIndex: 10,
   },
-  card: {
+  closeButtonContainer: {
+    width: 30,
+    height: 30,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeX: {
+    color: 'white',
+    fontSize: 22,
+    fontWeight: 'bold',
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  content: {
     backgroundColor: 'white',
-    borderRadius: 12,
-    margin: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 20,
   },
   memberHeader: {
     flexDirection: 'row',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: '#9C27B0',
     justifyContent: 'center',
     alignItems: 'center',
@@ -142,7 +160,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
   },
   memberInfo: {
@@ -150,9 +168,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   memberName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 3,
     color: '#333333',
   },
   memberSubtext: {
