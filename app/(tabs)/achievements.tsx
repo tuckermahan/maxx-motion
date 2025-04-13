@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, FlatList, Animated, TouchableOpacity, Modal, Dimensions, Platform, Image, ImageBackground } from 'react-native';
+import { StyleSheet, View, Text, FlatList, Animated, TouchableOpacity, Modal, Dimensions, Platform, Image, ImageBackground, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import Constants from 'expo-constants';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { supabase } from '@/lib/supabase';
+import { useUser } from '@/contexts/UserContext';
+import { useRouter } from 'expo-router';
 
 const BADGE_SIZE = (Dimensions.get('window').width - 48) / 3;
+const BADGE_PADDING = 6;
+const GRID_PADDING = 16;
 
 interface Badge {
   id: string;
@@ -174,11 +179,100 @@ const badges: Badge[] = [
   },
 ];
 
+type Milestone = {
+  id: string;
+  milestone_name: string;
+  milestone_minutes: number;
+  achieved: boolean;
+  achieved_at?: string;
+  rewarded: boolean;
+  rewarded_at?: string;
+};
+
 export default function AchievementsScreen() {
+  const { userProfile } = useUser();
   const [showAchievement, setShowAchievement] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(5);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [totalMinutes, setTotalMinutes] = useState(0);
   const scaleAnim = new Animated.Value(1);
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchMilestones();
+  }, []);
+
+  const fetchMilestones = async () => {
+    try {
+      // Get the current active event
+      const { data: activeEvent, error: eventError } = await supabase
+        .from('events')
+        .select('id')
+        .eq('status', 'Active')
+        .single();
+
+      if (eventError) {
+        console.error('Error fetching active event:', eventError);
+        return;
+      }
+
+      // Fetch milestones for this event
+      const { data: eventMilestones, error: milestonesError } = await supabase
+        .from('milestones')
+        .select('id, milestone_name, milestone_minutes, users_rewarded')
+        .eq('event_id', activeEvent.id)
+        .order('milestone_minutes', { ascending: true });
+
+      if (milestonesError) {
+        console.error('Error fetching milestones:', milestonesError);
+        return;
+      }
+
+      // Fetch user's activities
+      const { data: activities, error: activitiesError } = await supabase
+        .from('activities')
+        .select('activity_minutes, activity_date')
+        .eq('event_id', activeEvent.id)
+        .eq('user_id', userProfile?.id);
+
+      if (activitiesError) {
+        console.error('Error fetching activities:', activitiesError);
+        return;
+      }
+
+      // Calculate total minutes
+      const total = activities?.reduce((sum, activity) => sum + activity.activity_minutes, 0) || 0;
+      setTotalMinutes(total);
+
+      // Process milestones
+      const processedMilestones = eventMilestones.map(milestone => {
+        const achieved = total >= milestone.milestone_minutes;
+        const achievedDate = achieved ?
+          activities?.sort((a, b) => new Date(b.activity_date).getTime() - new Date(a.activity_date).getTime())[0]?.activity_date :
+          undefined;
+
+        const usersRewarded = milestone.users_rewarded || [];
+        const userReward = Array.isArray(usersRewarded) ?
+          usersRewarded.find((r: any) => r.user_id === userProfile?.id) :
+          null;
+
+        return {
+          id: milestone.id,
+          milestone_name: milestone.milestone_name,
+          milestone_minutes: milestone.milestone_minutes,
+          achieved,
+          achieved_at: achievedDate,
+          rewarded: !!userReward,
+          rewarded_at: userReward?.rewarded_at
+        };
+      });
+
+      setMilestones(processedMilestones);
+    } catch (error) {
+      console.error('Error in fetchMilestones:', error);
+    }
+  };
 
   useEffect(() => {
     const pulseAnimation = Animated.sequence([
@@ -213,6 +307,36 @@ export default function AchievementsScreen() {
     return flames;
   };
 
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'Steps':
+        return '#4CAF50';
+      case 'Workouts':
+        return '#2196F3';
+      case 'Activities':
+        return '#FF9800';
+      case 'Time':
+        return '#9C27B0';
+      default:
+        return '#666';
+    }
+  };
+
+  const renderProgressEmojis = (badge: Badge) => {
+    const totalEmojis = 5;
+    const filledEmojis = Math.floor((badge.progress / badge.total) * totalEmojis);
+
+    return (
+      <View style={styles.emojiContainer}>
+        {[...Array(totalEmojis)].map((_, index) => (
+          <Text key={index} style={styles.emoji}>
+            {index < filledEmojis ? badge.emoji : '⚪️'}
+          </Text>
+        ))}
+      </View>
+    );
+  };
+
   const renderBadge = ({ item, index }: { item: Badge; index: number }) => {
     const scaleAnim = new Animated.Value(1);
 
@@ -233,54 +357,7 @@ export default function AchievementsScreen() {
       setSelectedBadge(item);
     };
 
-    // Get category color based on category name
-    const getCategoryColor = (category: string) => {
-      switch (category) {
-        case 'Steps': return '#4CAF50'; // Green
-        case 'Workouts': return '#2196F3'; // Blue
-        case 'Activities': return '#FF9800'; // Orange
-        case 'Time': return '#9C27B0'; // Purple
-        default: return '#607D8B'; // Default gray
-      }
-    };
-
     const categoryColor = getCategoryColor(item.category);
-
-    // Render progress emojis
-    const renderProgressEmojis = () => {
-      const totalEmojis = 5; // Show 5 emojis for progress
-
-      // For Step Champion and Workout Master, show 0 progress
-      let progress = item.progress;
-      if (item.name === 'Step Champion' || item.name === 'Workout Master') {
-        progress = 0;
-      }
-
-      // For completed badges, show full progress
-      if (item.isUnlocked) {
-        progress = item.total;
-      }
-
-      const filledEmojis = Math.ceil((progress / item.total) * totalEmojis);
-      const emojis = [];
-
-      // Use the badge's emoji property
-      const progressEmoji = item.emoji;
-
-      for (let i = 0; i < totalEmojis; i++) {
-        emojis.push(
-          <Text key={i} style={[styles.progressEmoji, i < filledEmojis ? styles.progressEmojiFilled : styles.progressEmojiEmpty]}>
-            {progressEmoji}
-          </Text>
-        );
-      }
-
-      return (
-        <View style={styles.progressEmojiContainer}>
-          {emojis}
-        </View>
-      );
-    };
 
     return (
       <TouchableOpacity
@@ -292,14 +369,15 @@ export default function AchievementsScreen() {
         <Animated.View
           style={[
             styles.badge,
-            !item.isUnlocked && styles.badgeLocked,
-            item.isUnlocked && styles.badgeUnlocked,
+            item.isUnlocked ? styles.badgeUnlocked : styles.badgeLocked,
             { transform: [{ scale: scaleAnim }] }
           ]}
         >
           {item.isUnlocked && (
-            <View style={styles.unlockedIndicator}>
-              <FontAwesome5 name="check-circle" size={16} color="#4CAF50" />
+            <View style={styles.unlockedOverlay}>
+              <View style={styles.unlockedIndicator}>
+                <FontAwesome5 name="check-circle" size={24} color="#4CAF50" />
+              </View>
             </View>
           )}
 
@@ -318,66 +396,19 @@ export default function AchievementsScreen() {
             </View>
           </View>
 
-          <View style={styles.progressContainer}>
-            {renderProgressEmojis()}
-            <Text style={styles.progressText}>
-              {item.name === 'Step Champion' || item.name === 'Workout Master' ? 0 : item.progress}/{item.total}
-            </Text>
+          <View style={styles.emojiContainer}>
+            {renderProgressEmojis(item)}
           </View>
+          <Text style={styles.progressText}>
+            {item.progress}/{item.total}
+          </Text>
         </Animated.View>
       </TouchableOpacity>
     );
   };
 
   const renderBadgeModal = (badge: Badge) => {
-    // Get category color based on category name
-    const getCategoryColor = (category: string) => {
-      switch (category) {
-        case 'Steps': return '#4CAF50'; // Green
-        case 'Workouts': return '#2196F3'; // Blue
-        case 'Activities': return '#FF9800'; // Orange
-        case 'Time': return '#9C27B0'; // Purple
-        default: return '#607D8B'; // Default gray
-      }
-    };
-
     const categoryColor = getCategoryColor(badge.category);
-
-    // Render progress emojis for modal
-    const renderModalProgressEmojis = () => {
-      const totalEmojis = 5; // Show 5 emojis for progress
-
-      // For Step Champion and Workout Master, show 0 progress
-      let progress = badge.progress;
-      if (badge.name === 'Step Champion' || badge.name === 'Workout Master') {
-        progress = 0;
-      }
-
-      // For completed badges, show full progress
-      if (badge.isUnlocked) {
-        progress = badge.total;
-      }
-
-      const filledEmojis = Math.ceil((progress / badge.total) * totalEmojis);
-      const emojis = [];
-
-      // Use the badge's emoji property
-      const progressEmoji = badge.emoji;
-
-      for (let i = 0; i < totalEmojis; i++) {
-        emojis.push(
-          <Text key={i} style={[styles.modalProgressEmoji, i < filledEmojis ? styles.modalProgressEmojiFilled : styles.modalProgressEmojiEmpty]}>
-            {progressEmoji}
-          </Text>
-        );
-      }
-
-      return (
-        <View style={styles.modalProgressEmojiContainer}>
-          {emojis}
-        </View>
-      );
-    };
 
     return (
       <View style={styles.modalContent}>
@@ -393,7 +424,7 @@ export default function AchievementsScreen() {
         <Text style={styles.modalDescription}>{badge.description}</Text>
         <>
           <Text style={styles.modalProgressTitle}>Progress:</Text>
-          {renderModalProgressEmojis()}
+          {renderProgressEmojis(badge)}
           <Text style={styles.modalProgressText}>
             {badge.name === 'Step Champion' || badge.name === 'Workout Master' ? 0 : badge.progress} of {badge.total} completed
           </Text>
@@ -408,6 +439,53 @@ export default function AchievementsScreen() {
     );
   };
 
+  const renderMilestoneProgress = () => {
+    if (milestones.length === 0) return null;
+
+    return (
+      <View style={styles.milestoneSection}>
+        <Text style={styles.milestoneTitle}>Event Milestones</Text>
+        <View style={styles.totalMinutesContainer}>
+          <Text style={styles.totalMinutesLabel}>Total Minutes:</Text>
+          <Text style={styles.totalMinutesValue}>{totalMinutes}</Text>
+        </View>
+
+        {milestones.map((milestone, index) => (
+          <View key={milestone.id} style={styles.milestoneCard}>
+            <View style={styles.milestoneHeader}>
+              <Text style={styles.milestoneName}>{milestone.milestone_name}</Text>
+              <Text style={styles.milestoneMinutes}>{milestone.milestone_minutes} minutes</Text>
+            </View>
+
+            <View style={styles.milestoneProgressContainer}>
+              <View style={[
+                styles.milestoneProgressBar,
+                { width: `${Math.min(100, (totalMinutes / milestone.milestone_minutes) * 100)}%` }
+              ]} />
+            </View>
+
+            <View style={styles.milestoneStatus}>
+              {milestone.achieved ? (
+                <View style={styles.achievedBadge}>
+                  <Text style={styles.achievedText}>
+                    {milestone.rewarded ? '🏆 Rewarded' : '✨ Achieved'}
+                  </Text>
+                  <Text style={styles.achievedDate}>
+                    {milestone.achieved_at ? new Date(milestone.achieved_at).toLocaleDateString() : ''}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.pendingText}>
+                  {milestone.milestone_minutes - totalMinutes} minutes to go
+                </Text>
+              )}
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -418,8 +496,8 @@ export default function AchievementsScreen() {
       >
         <LinearGradient
           colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
-          locations={[0, 0.5]}
           style={styles.headerOverlay}
+          locations={[0, 0.5]}
         >
           <View style={styles.header}>
             <Text style={styles.headerTitle}>MAXX Motion</Text>
@@ -430,7 +508,12 @@ export default function AchievementsScreen() {
           <View style={styles.headerContent}>
             <Text style={styles.pageTitle}>Achievements</Text>
             <Text style={styles.tagline}>Track your motion. Reach your potential.</Text>
+            <TouchableOpacity onPress={() => router.push('/profile')}>
+              <FontAwesome5 name="user-circle" size={24} color="#fff" />
+            </TouchableOpacity>
           </View>
+          <Text style={styles.headerTitle}>Achievements</Text>
+          <Text style={styles.headerSubtitle}>Challenge yourself. Earn rewards.</Text>
         </LinearGradient>
       </ImageBackground>
 
@@ -447,13 +530,21 @@ export default function AchievementsScreen() {
         </View>
       </View>
 
-      <FlatList
-        data={badges}
-        renderItem={renderBadge}
-        numColumns={3}
-        contentContainerStyle={styles.badgeGrid}
-        showsVerticalScrollIndicator={false}
-      />
+      <ScrollView style={styles.content}>
+        {renderMilestoneProgress()}
+
+        <View style={styles.achievementsSection}>
+          <Text style={styles.achievementsTitle}>My Achievements</Text>
+          <FlatList
+            data={badges}
+            renderItem={renderBadge}
+            keyExtractor={item => item.id}
+            numColumns={3}
+            scrollEnabled={false}
+            contentContainerStyle={styles.badgesGrid}
+          />
+        </View>
+      </ScrollView>
 
       <Modal
         visible={selectedBadge !== null}
@@ -597,7 +688,8 @@ const styles = StyleSheet.create({
   },
   badgeContainer: {
     width: BADGE_SIZE,
-    padding: 6,
+    padding: BADGE_PADDING,
+    backgroundColor: 'transparent',
   },
   badge: {
     backgroundColor: '#fff',
@@ -616,19 +708,25 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   badgeUnlocked: {
-    borderColor: '#4CAF50',
-    borderWidth: 2,
-    shadowColor: '#4CAF50',
-    shadowOpacity: 0.2,
+    backgroundColor: '#E8F5E9',
+  },
+  unlockedOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    zIndex: 1,
   },
   unlockedIndicator: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 8,
+    right: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 10,
-    padding: 2,
-    zIndex: 1,
+    borderRadius: 12,
+    padding: 4,
+    zIndex: 2,
   },
   badgeImage: {
     width: '100%',
@@ -660,30 +758,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
   },
-  progressContainer: {
-    marginTop: 4,
-    alignItems: 'center',
-    paddingBottom: 8,
-  },
-  progressEmojiContainer: {
+  emojiContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginTop: 8,
   },
-  progressEmoji: {
-    fontSize: 14,
+  emoji: {
+    fontSize: 16,
     marginHorizontal: 2,
   },
-  progressEmojiFilled: {
-    opacity: 1,
-  },
-  progressEmojiEmpty: {
-    opacity: 0.3,
-  },
   progressText: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#666',
     textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 8,
   },
   modalOverlay: {
     flex: 1,
@@ -795,5 +884,124 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginBottom: 16,
+  },
+  milestoneSection: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    margin: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  milestoneTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#000',
+  },
+  milestoneSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 16,
+  },
+  totalMinutesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  totalMinutesLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 8,
+  },
+  totalMinutesValue: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#C41E3A',
+  },
+  milestoneCard: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  milestoneHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  milestoneName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  milestoneMinutes: {
+    fontSize: 14,
+    color: '#666',
+  },
+  milestoneStatus: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  achievedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  achievedText: {
+    fontSize: 14,
+    color: '#4CAF50',
+    marginRight: 8,
+  },
+  achievedDate: {
+    fontSize: 12,
+    color: '#666',
+  },
+  pendingText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  content: {
+    flex: 1,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#fff',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  achievementsSection: {
+    marginTop: 24,
+    paddingHorizontal: GRID_PADDING,
+  },
+  achievementsTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 16,
+  },
+  milestoneProgressContainer: {
+    height: 8,
+    backgroundColor: '#eee',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  milestoneProgressBar: {
+    height: '100%',
+    backgroundColor: '#C41E3A',
+    borderRadius: 4,
+  },
+  badgesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: BADGE_PADDING,
   },
 }); 

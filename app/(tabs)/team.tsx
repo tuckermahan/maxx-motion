@@ -69,7 +69,7 @@ export default function TeamScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredMembers, setFilteredMembers] = useState<TeamMember[]>([]);
-  
+
   // New state variables for database data
   const [loading, setLoading] = useState(true);
   const [userTeam, setUserTeam] = useState<Team | null>(null);
@@ -153,6 +153,8 @@ export default function TeamScreen() {
     try {
       setLoading(true);
       
+      console.log('Fetching teams for user:', user?.id);
+      
       // Get user's team memberships
       const { data: memberships, error: membershipError } = await supabase
         .from('team_members')
@@ -165,8 +167,12 @@ export default function TeamScreen() {
         return;
       }
       
+      console.log('Team memberships found:', memberships?.length || 0);
+      console.log('Raw membership data:', JSON.stringify(memberships));
+      
       if (!memberships || memberships.length === 0) {
         // User is not part of any team
+        console.log('No team memberships found for user');
         setLoading(false);
         return;
       }
@@ -180,19 +186,29 @@ export default function TeamScreen() {
         const teamsArray = membership?.teams;
         if (teamsArray && Array.isArray(teamsArray) && teamsArray.length > 0) {
           const team = teamsArray[0];
+          console.log('Checking team:', team?.team_name);
+          
           const eventsArray = team.events;
           if (eventsArray && Array.isArray(eventsArray) && eventsArray.length > 0) {
             const event = eventsArray[0];
+            console.log('Found event with status:', event?.status);
+            
             if (event.status === 'Active') {
+              console.log('Active event found:', event?.name);
               activeEventTeam = membership;
               break;
             }
+          } else {
+            console.log('No events found for team');
           }
+        } else {
+          console.log('Teams array is empty or not properly structured');
         }
       }
       
       // If no active event, look for upcoming event
       if (!activeEventTeam) {
+        console.log('No active event found, looking for upcoming events');
         for (const membership of memberships) {
           const teamsArray = membership?.teams;
           if (teamsArray && Array.isArray(teamsArray) && teamsArray.length > 0) {
@@ -201,6 +217,7 @@ export default function TeamScreen() {
             if (eventsArray && Array.isArray(eventsArray) && eventsArray.length > 0) {
               const event = eventsArray[0];
               if (event.status === 'Upcoming') {
+                console.log('Upcoming event found:', event?.name);
                 activeEventTeam = membership;
                 break;
               }
@@ -211,38 +228,83 @@ export default function TeamScreen() {
       
       // If neither active nor upcoming, use the first one (likely archived)
       if (!activeEventTeam && memberships.length > 0) {
+        console.log('No active or upcoming events found, using first available membership');
         activeEventTeam = memberships[0];
       }
       
       if (activeEventTeam) {
+        console.log('Selected team membership:', activeEventTeam);
         const teamsArray = activeEventTeam.teams;
-        if (teamsArray && Array.isArray(teamsArray) && teamsArray.length > 0) {
-          const team = teamsArray[0];
+        
+        // Check if teams is already an object rather than an array
+        if (teamsArray && typeof teamsArray === 'object') {
+          let team;
+          let eventsData;
           
-          const teamData = {
-            id: team.id || '',
-            team_name: team.team_name || '',
-            team_minute_goal: team.team_minute_goal || 10000,
-            captain_id: team.captain_id || '',
-            event_id: team.event_id || ''
-          };
+          // Handle both array and direct object cases
+          if (Array.isArray(teamsArray)) {
+            console.log('Teams is an array with length:', teamsArray.length);
+            if (teamsArray.length > 0) {
+              team = teamsArray[0];
+            }
+          } else {
+            console.log('Teams is a direct object');
+            team = teamsArray;
+          }
           
-          const eventsArray = team.events;
-          if (eventsArray && Array.isArray(eventsArray) && eventsArray.length > 0) {
-            const event = eventsArray[0];
+          if (team) {
+            console.log('Team found:', team.team_name);
             
-            const eventData = {
-              id: event.id || '',
-              name: event.name || '',
-              start_date: event.start_date || '',
-              end_date: event.end_date || '',
-              status: (event.status as 'Upcoming' | 'Active' | 'Archive') || 'Archive'
+            const teamData = {
+              id: team.id || '',
+              team_name: team.team_name || '',
+              team_minute_goal: team.team_minute_goal || 10000,
+              captain_id: team.captain_id || '',
+              event_id: team.event_id || ''
             };
             
-            setUserTeam(teamData);
-            setUserEvent(eventData);
+            // Handle events the same way - could be array or direct object
+            if (team.events) {
+              if (Array.isArray(team.events)) {
+                console.log('Events is an array with length:', team.events.length);
+                if (team.events.length > 0) {
+                  eventsData = team.events[0];
+                }
+              } else {
+                console.log('Events is a direct object');
+                eventsData = team.events;
+              }
+              
+              if (eventsData) {
+                console.log('Event found:', eventsData.name, 'with status:', eventsData.status);
+                
+                const eventData = {
+                  id: eventsData.id || '',
+                  name: eventsData.name || '',
+                  start_date: eventsData.start_date || '',
+                  end_date: eventsData.end_date || '',
+                  status: (eventsData.status as 'Upcoming' | 'Active' | 'Archive') || 'Archive'
+                };
+                
+                console.log('Setting user team:', teamData);
+                console.log('Setting user event:', eventData);
+                
+                setUserTeam(teamData);
+                setUserEvent(eventData);
+              } else {
+                console.log('No valid event data found');
+              }
+            } else {
+              console.log('No events property found on team');
+            }
+          } else {
+            console.log('No valid team found');
           }
+        } else {
+          console.log('Teams property is not an object or is undefined');
         }
+      } else {
+        console.log('No active team membership found');
       }
     } catch (err) {
       console.error('Error fetching user team:', err);

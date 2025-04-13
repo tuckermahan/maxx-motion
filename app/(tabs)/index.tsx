@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useUser } from '@/contexts/UserContext';
 import { ImageBackground } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import ParallaxScrollView from '@/components/ParallaxScrollView';
 
 // Team interface for leaderboard
 interface Team {
@@ -122,12 +123,7 @@ export default function DashboardScreen() {
   }, [user, userProfile]);
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Dashboard</Text>
-        <Text style={styles.headerSubtitle}>Welcome back{userProfile?.full_name ? `, ${userProfile.full_name}` : ''}!</Text>
-      </View>
-      <ParallaxScrollView
+    <ParallaxScrollView
       headerBackgroundColor={{ light: 'transparent', dark: 'transparent' }}
       headerImage={
         <ImageBackground
@@ -235,7 +231,7 @@ export default function DashboardScreen() {
       <TouchableOpacity style={styles.fab}>
         <ThemedText style={styles.fabIcon}>+</ThemedText>
       </TouchableOpacity>
-    </ScrollView>
+    </ParallaxScrollView>
   );
 }
 
@@ -293,11 +289,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#C41E3A',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8f8f8',
   },
-  header: {
+  headerBar: {
     backgroundColor: '#C41E3A',
     padding: 20,
     paddingTop: 60,
@@ -467,5 +464,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#fff',
     fontWeight: '600',
-  }
+  },
+  comingSoon: {
+    fontSize: 14,
+    color: '#888',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 8,
+  },
 });

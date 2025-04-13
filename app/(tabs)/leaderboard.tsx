@@ -215,7 +215,7 @@ export default function LeaderboardScreen() {
     ? nextRankMember.totalMinutes - currentUser.totalMinutes
     : undefined;
 
-  const [activeTab, setActiveTab] = useState<'team' | 'user'>('team');
+  const [activeTab, setActiveTab] = useState<'team' | 'user' | 'profile'>('team');
 
   return (
     <View style={styles.container}>
@@ -257,6 +257,14 @@ export default function LeaderboardScreen() {
         >
           <Text style={[styles.tabText, activeTab === 'user' && styles.activeTabText]}>
             USER RANKINGS
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'profile' && styles.activeTab]}
+          onPress={() => setActiveTab('profile')}
+        >
+          <Text style={[styles.tabText, activeTab === 'profile' && styles.activeTabText]}>
+            MY PROFILE
           </Text>
         </TouchableOpacity>
       </View>
@@ -344,7 +352,7 @@ export default function LeaderboardScreen() {
             </TouchableOpacity>
           )}
         </ScrollView>
-      ) : (
+      ) : activeTab === 'user' ? (
         <ScrollView style={styles.content}>
           <View style={styles.podiumContainer}>
             <View style={styles.podiumRow}>
@@ -438,6 +446,78 @@ export default function LeaderboardScreen() {
               nextRankMinutes={member.isCurrentUser ? minutesToNextRank : undefined}
             />
           ))}
+        </ScrollView>
+      ) : (
+        <ScrollView style={styles.content}>
+          <View style={styles.profileContainer}>
+            <View style={styles.profileHeader}>
+              <View style={styles.profileAvatar}>
+                <Text style={styles.profileAvatarText}>JJ</Text>
+              </View>
+              <View style={styles.profileInfo}>
+                <Text style={styles.profileName}>Jessica John</Text>
+                <Text style={styles.profileTeam}>Wellness Warriors</Text>
+              </View>
+            </View>
+
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>240</Text>
+                <Text style={styles.statLabel}>Minutes</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>2</Text>
+                <Text style={styles.statLabel}>Rank</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>15</Text>
+                <Text style={styles.statLabel}>Activities</Text>
+              </View>
+            </View>
+
+            <View style={styles.progressSection}>
+              <Text style={styles.sectionTitle}>Progress to Next Rank</Text>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: '60%' }]} />
+              </View>
+              <Text style={styles.progressText}>60 mins to reach rank 1</Text>
+            </View>
+
+            <View style={styles.recentActivitySection}>
+              <Text style={styles.sectionTitle}>Recent Activity</Text>
+              <View style={styles.activityList}>
+                <View style={styles.activityItem}>
+                  <View style={[styles.activityIcon, { backgroundColor: '#4CAF50' }]}>
+                    <Text style={styles.activityIconText}>R</Text>
+                  </View>
+                  <View style={styles.activityDetails}>
+                    <Text style={styles.activityTitle}>Running</Text>
+                    <Text style={styles.activitySubtext}>Today • 45 minutes</Text>
+                  </View>
+                </View>
+                <View style={styles.activityItem}>
+                  <View style={[styles.activityIcon, { backgroundColor: '#FF9800' }]}>
+                    <Text style={styles.activityIconText}>Y</Text>
+                  </View>
+                  <View style={styles.activityDetails}>
+                    <Text style={styles.activityTitle}>Yoga</Text>
+                    <Text style={styles.activitySubtext}>Yesterday • 30 minutes</Text>
+                  </View>
+                </View>
+                <View style={styles.activityItem}>
+                  <View style={[styles.activityIcon, { backgroundColor: '#9C27B0' }]}>
+                    <Text style={styles.activityIconText}>W</Text>
+                  </View>
+                  <View style={styles.activityDetails}>
+                    <Text style={styles.activityTitle}>Weight Training</Text>
+                    <Text style={styles.activitySubtext}>Apr 10 • 60 minutes</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
         </ScrollView>
       )}
     </View>
@@ -802,9 +882,6 @@ const styles = StyleSheet.create({
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   activityIconContainer: {
     width: 40,
@@ -816,7 +893,15 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   activityIcon: {
-    color: 'white',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityIconText: {
+    color: '#fff',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -824,9 +909,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activityDetails: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+    marginBottom: 2,
+  },
+  activitySubtext: {
     fontSize: 14,
     color: '#666',
-    marginTop: 2,
   },
   memberItem: {
     flexDirection: 'row',
@@ -1011,5 +1104,125 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
+  },
+  profileContainer: {
+    padding: 16,
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  profileAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#C41E3A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  profileAvatarText: {
+    color: '#fff',
+    fontSize: 32,
+    fontWeight: '600',
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  profileTeam: {
+    fontSize: 16,
+    color: '#666',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#C41E3A',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 8,
+  },
+  progressSection: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 12,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#C41E3A',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  recentActivitySection: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  activityList: {
+    gap: 12,
   },
 }); 
