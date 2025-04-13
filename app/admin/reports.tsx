@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 
 // Type definitions
 type Event = {
@@ -23,6 +24,7 @@ type TeamReport = {
   team_name: string;
   total_minutes: number;
   participants_count: number;
+  members?: TeamMemberActivity[];
 };
 
 type MilestoneAchievement = {
@@ -38,6 +40,53 @@ type MilestoneAchievement = {
   rewarded_at?: string | null;
 };
 
+// Add these new types for the weekly report functionality
+type TeamReportDetails = TeamReport & {
+  members: TeamMemberActivity[];
+};
+
+type TeamMemberActivity = {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  total_minutes: number;
+  team_id: string;
+  team_name: string;
+};
+
+type UserActivity = {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  team_name: string;
+  team_id: string;
+  total_minutes: number;
+};
+
+// Add types for cumulative report
+type CumulativeTeamData = {
+  id: string;
+  team_name: string;
+  total_minutes: number;
+  participants_count: number;
+  rank: number;
+  members: CumulativeMemberData[];
+};
+
+type CumulativeMemberData = {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  total_minutes: number;
+  team_name: string;
+  team_id: string;
+  rank: number;
+  team_rank: number;
+};
+
 export default function AdminReportsScreen() {
   const { userProfile, loading: userLoading } = useUser();
   const [loading, setLoading] = useState(true);
@@ -50,6 +99,16 @@ export default function AdminReportsScreen() {
   const [reportDate, setReportDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [markingReward, setMarkingReward] = useState(false);
+  const [weeklyReportView, setWeeklyReportView] = useState<'teams' | 'users'>('teams');
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [teamDetails, setTeamDetails] = useState<TeamReportDetails | null>(null);
+  const [allUsersActivity, setAllUsersActivity] = useState<UserActivity[]>([]);
+  const [availableWeeks, setAvailableWeeks] = useState<{start: Date, end: Date}[]>([]);
+  const [reportType, setReportType] = useState<'weekly' | 'cumulative'>('weekly');
+  const [cumulativeTeamData, setCumulativeTeamData] = useState<CumulativeTeamData[]>([]);
+  const [cumulativeUserData, setCumulativeUserData] = useState<CumulativeMemberData[]>([]);
+  const [cumulativeView, setCumulativeView] = useState<'teams' | 'users'>('teams');
+  const [selectedCumulativeTeam, setSelectedCumulativeTeam] = useState<string | null>(null);
 
   // Redirect non-admin users
   useEffect(() => {
@@ -119,59 +178,173 @@ export default function AdminReportsScreen() {
       endOfWeek.setDate(startOfWeek.getDate() + 6); // Saturday
       endOfWeek.setHours(23, 59, 59, 999);
       
-      // Query to get weekly team report data using the activities table
-      // Join to get team data and count participants
-      const { data, error } = await supabase
-        .from('teams')
-        .select(`
-          id,
-          team_name,
-          team_members!inner(user_id),
-          activities!inner(activity_minutes, user_id)
-        `)
-        .eq('event_id', selectedEvent.id)
-        .gte('activities.activity_date', startOfWeek.toISOString().split('T')[0])
-        .lte('activities.activity_date', endOfWeek.toISOString().split('T')[0])
-        .eq('activities.event_id', selectedEvent.id);
+      console.log(`Fetching weekly report for ${startOfWeek.toISOString()} to ${endOfWeek.toISOString()}`);
       
-      if (error) {
-        console.error('Error fetching weekly report:', error);
-        // Fallback to sample data for development
-        const sampleTeams = [
-          { id: '1', team_name: 'Team Alpha', total_minutes: 1250, participants_count: 5 },
-          { id: '2', team_name: 'Team Beta', total_minutes: 980, participants_count: 4 },
-          { id: '3', team_name: 'Team Gamma', total_minutes: 1530, participants_count: 6 },
-          { id: '4', team_name: 'Team Delta', total_minutes: 750, participants_count: 3 },
-        ];
-        setWeeklyReports(sampleTeams);
-      } else if (data) {
-        // Process the returned data to calculate totals and participant counts
-        const teamReports: TeamReport[] = [];
+      // Step 1: Get all teams for this event
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('id, team_name')
+        .eq('event_id', selectedEvent.id);
+      
+      if (teamsError) {
+        console.error('Error fetching teams:', teamsError);
+        return;
+      }
+      
+      if (!teamsData || teamsData.length === 0) {
+        console.log('No teams found for this event');
+        setWeeklyReports([]);
+        setLoading(false);
+        return;
+      }
+      
+      console.log(`Found ${teamsData.length} teams`);
+      
+      // Step 2: For each team, get team members
+      const teamMembersPromises = teamsData.map(team => 
+        supabase
+          .from('team_members')
+          .select('user_id, teams!inner(team_name)')
+          .eq('team_id', team.id)
+      );
+      
+      const teamMembersResults = await Promise.all(teamMembersPromises);
+      
+      // Map of team ID to member user IDs
+      const teamMembersMap = new Map();
+      
+      teamMembersResults.forEach((result, index) => {
+        if (result.error) {
+          console.error(`Error fetching members for team ${teamsData[index].id}:`, result.error);
+          return;
+        }
         
-        data.forEach(team => {
-          // Get unique users who logged activities
-          const participantIds = new Set();
-          let totalMinutes = 0;
+        teamMembersMap.set(teamsData[index].id, result.data || []);
+      });
+      
+      // Step 3: Get all activities for this event in this week
+      const { data: activitiesData, error: activitiesError } = await supabase
+        .from('activities')
+        .select('user_id, activity_minutes, activity_date')
+        .eq('event_id', selectedEvent.id)
+        .gte('activity_date', startOfWeek.toISOString().split('T')[0])
+        .lte('activity_date', endOfWeek.toISOString().split('T')[0]);
+      
+      if (activitiesError) {
+        console.error('Error fetching activities:', activitiesError);
+        return;
+      }
+      
+      console.log(`Found ${activitiesData?.length || 0} activities in this week`);
+      
+      // Step 4: Get user profiles for all users with activities
+      const userIds = [...new Set((activitiesData || []).map(a => a.user_id))];
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+      
+      if (profilesError) {
+        console.error('Error fetching user profiles:', profilesError);
+        return;
+      }
+      
+      // Create user lookup map
+      const userMap = new Map();
+      profilesData?.forEach(profile => {
+        userMap.set(profile.id, profile);
+      });
+      
+      // Step 5: Calculate activity totals by user
+      const userActivityMap = new Map();
+      
+      (activitiesData || []).forEach(activity => {
+        const currentTotal = userActivityMap.get(activity.user_id) || 0;
+        userActivityMap.set(activity.user_id, currentTotal + activity.activity_minutes);
+      });
+      
+      // Step 6: Calculate team totals and build the report
+      const teamReports: TeamReport[] = [];
+      const allUserActivities: UserActivity[] = [];
+      
+      teamsData.forEach(team => {
+        const teamMembers = teamMembersMap.get(team.id) || [];
+        let totalMinutes = 0;
+        const activeMembers = new Set();
+        const memberActivities: TeamMemberActivity[] = [];
+        
+        teamMembers.forEach((member: any) => {
+          const userMinutes = userActivityMap.get(member.user_id) || 0;
+          const user = userMap.get(member.user_id);
           
-          // Process each activity
-          team.activities.forEach((activity: any) => {
-            participantIds.add(activity.user_id);
-            totalMinutes += activity.activity_minutes;
-          });
-          
-          teamReports.push({
-            id: team.id,
-            team_name: team.team_name,
-            total_minutes: totalMinutes,
-            participants_count: participantIds.size
-          });
+          if (userMinutes > 0) {
+            activeMembers.add(member.user_id);
+            totalMinutes += userMinutes;
+            
+            // Add to member activities list
+            if (user) {
+              memberActivities.push({
+                id: member.user_id,
+                user_id: member.user_id,
+                full_name: user.full_name,
+                email: user.email,
+                total_minutes: userMinutes,
+                team_id: team.id,
+                team_name: team.team_name
+              });
+              
+              // Also add to all users list
+              allUserActivities.push({
+                id: member.user_id,
+                user_id: member.user_id,
+                full_name: user.full_name,
+                email: user.email,
+                team_name: team.team_name,
+                team_id: team.id,
+                total_minutes: userMinutes
+              });
+            }
+          }
         });
         
-        setWeeklyReports(teamReports);
+        // Sort member activities by minutes (descending)
+        memberActivities.sort((a, b) => b.total_minutes - a.total_minutes);
+        
+        teamReports.push({
+          id: team.id,
+          team_name: team.team_name,
+          total_minutes: totalMinutes,
+          participants_count: activeMembers.size,
+          members: memberActivities
+        });
+      });
+      
+      // Sort team reports by total minutes (descending)
+      teamReports.sort((a, b) => b.total_minutes - a.total_minutes);
+      
+      // Sort all user activities by minutes (descending)
+      allUserActivities.sort((a, b) => b.total_minutes - a.total_minutes);
+      
+      console.log(`Generated ${teamReports.length} team reports`);
+      console.log(`Found ${allUserActivities.length} active users`);
+      
+      setWeeklyReports(teamReports);
+      setAllUsersActivity(allUserActivities);
+      
+      // If a team was selected before, update its details
+      if (selectedTeam) {
+        const teamReport = teamReports.find(team => team.id === selectedTeam);
+        if (teamReport) {
+          setTeamDetails(teamReport as TeamReportDetails);
+        } else {
+          setSelectedTeam(null);
+        }
       }
+      
     } catch (error) {
-      console.error('Unexpected error:', error);
-      Alert.alert('Error', 'An unexpected error occurred');
+      console.error('Error generating weekly report:', error);
+      Alert.alert('Error', 'Failed to generate weekly report');
     } finally {
       setLoading(false);
     }
@@ -503,8 +676,98 @@ export default function AdminReportsScreen() {
     });
   };
 
+  // Add utility functions to handle date operations
+  const getWeekRanges = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Adjust start date to the beginning of the week (Sunday)
+    const startOfFirstWeek = new Date(start);
+    startOfFirstWeek.setDate(start.getDate() - start.getDay());
+    startOfFirstWeek.setHours(0, 0, 0, 0);
+    
+    const weeks: {start: Date, end: Date}[] = [];
+    let currentWeekStart = new Date(startOfFirstWeek);
+    
+    while (currentWeekStart <= end) {
+      const currentWeekEnd = new Date(currentWeekStart);
+      currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+      currentWeekEnd.setHours(23, 59, 59, 999);
+      
+      weeks.push({
+        start: new Date(currentWeekStart),
+        end: new Date(currentWeekEnd)
+      });
+      
+      // Move to next week
+      currentWeekStart = new Date(currentWeekStart);
+      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    }
+    
+    return weeks;
+  };
+
+  // Add this effect to calculate available weeks when event changes
+  useEffect(() => {
+    if (selectedEvent) {
+      // Calculate available weeks for this event
+      const weeks = getWeekRanges(selectedEvent.start_date, selectedEvent.end_date);
+      setAvailableWeeks(weeks);
+      
+      // Set the report date to the most recent week that has ended
+      const now = new Date();
+      const currentWeek = weeks.find(week => week.end < now);
+      if (currentWeek) {
+        setReportDate(new Date(currentWeek.start));
+      } else if (weeks.length > 0) {
+        setReportDate(new Date(weeks[0].start));
+      }
+    }
+  }, [selectedEvent]);
+
+  // Add this function to go back from team details view
+  const handleBackFromTeamDetails = () => {
+    setSelectedTeam(null);
+    setTeamDetails(null);
+  };
+
+  // Add this function to view team details
+  const handleViewTeamDetails = (teamId: string) => {
+    const team = weeklyReports.find(t => t.id === teamId) as TeamReportDetails;
+    if (team) {
+      setSelectedTeam(teamId);
+      setTeamDetails(team);
+    }
+  };
+
+  // Add new render functions for team details and all users views
+  const renderTeamMemberItem = ({ item }: { item: TeamMemberActivity }) => (
+    <View style={styles.memberItem}>
+      <View style={styles.memberInfo}>
+        <ThemedText style={styles.memberName}>{item.full_name}</ThemedText>
+        <ThemedText style={styles.memberEmail}>{item.email}</ThemedText>
+      </View>
+      <ThemedText style={styles.memberMinutes}>{item.total_minutes} minutes</ThemedText>
+    </View>
+  );
+
+  const renderAllUserItem = ({ item }: { item: UserActivity }) => (
+    <View style={styles.userItem}>
+      <View style={styles.userInfo}>
+        <ThemedText style={styles.userName}>{item.full_name}</ThemedText>
+        <ThemedText style={styles.userEmail}>{item.email}</ThemedText>
+        <ThemedText style={styles.userTeam}>Team: {item.team_name}</ThemedText>
+      </View>
+      <ThemedText style={styles.userMinutes}>{item.total_minutes} minutes</ThemedText>
+    </View>
+  );
+
+  // Modify the renderTeamReportItem function
   const renderTeamReportItem = ({ item }: { item: TeamReport }) => (
-    <View style={styles.reportItem}>
+    <TouchableOpacity 
+      style={styles.reportItem}
+      onPress={() => handleViewTeamDetails(item.id)}
+    >
       <View style={styles.reportHeader}>
         <ThemedText style={styles.teamName}>{item.team_name}</ThemedText>
       </View>
@@ -526,9 +789,10 @@ export default function AdminReportsScreen() {
           </ThemedText>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
+  // Fix the missing renderMilestoneItem function (still needed for milestone achievements section)
   const renderMilestoneItem = ({ item }: { item: MilestoneAchievement }) => (
     <View style={[
       styles.milestoneItem,
@@ -578,6 +842,319 @@ export default function AdminReportsScreen() {
     console.log("eventMilestones.length:", eventMilestones.length);
   }, [selectedMilestone, milestoneAchievements.length, eventMilestones.length]);
 
+  // Add a function to navigate between weeks
+  const navigateToWeek = (direction: 'prev' | 'next') => {
+    if (!availableWeeks.length) return;
+    
+    // Find the index of the current week
+    const currentIndex = availableWeeks.findIndex(
+      week => week.start.toDateString() === new Date(reportDate).toDateString()
+    );
+    
+    if (currentIndex === -1) return;
+    
+    // Calculate the new index
+    let newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+    
+    // Ensure the index is within bounds
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= availableWeeks.length) newIndex = availableWeeks.length - 1;
+    
+    // Don't do anything if we're already at the first/last week
+    if (newIndex === currentIndex) return;
+    
+    // Set the new report date
+    setReportDate(new Date(availableWeeks[newIndex].start));
+  };
+
+  // Fix the SimpleBarChart component TypeScript errors
+  const SimpleBarChart = ({ 
+    data, 
+    maxValue 
+  }: { 
+    data: Array<{label: string, value: number}>, 
+    maxValue: number 
+  }) => {
+    return (
+      <View style={styles.chartContainer}>
+        <ThemedText style={styles.chartTitle}>Team Activity Comparison</ThemedText>
+        {data.map((item, index) => (
+          <View key={index} style={styles.chartItemContainer}>
+            <ThemedText style={styles.chartLabel}>{item.label}</ThemedText>
+            <View style={styles.barContainer}>
+              <View 
+                style={[
+                  styles.bar, 
+                  { width: `${Math.min((item.value / maxValue) * 100, 100)}%` }
+                ]} 
+              />
+              <ThemedText style={styles.barValue}>{item.value} min</ThemedText>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  // Add function to fetch cumulative report data
+  const fetchCumulativeReport = async () => {
+    if (!selectedEvent) return;
+    
+    try {
+      setLoading(true);
+      
+      // Step 1: Get all teams for this event
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('id, team_name')
+        .eq('event_id', selectedEvent.id);
+      
+      if (teamsError) {
+        console.error('Error fetching teams:', teamsError);
+        return;
+      }
+      
+      if (!teamsData || teamsData.length === 0) {
+        setCumulativeTeamData([]);
+        setCumulativeUserData([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Step 2: For each team, get team members
+      const teamMembersPromises = teamsData.map(team => 
+        supabase
+          .from('team_members')
+          .select('user_id, teams!inner(team_name)')
+          .eq('team_id', team.id)
+      );
+      
+      const teamMembersResults = await Promise.all(teamMembersPromises);
+      
+      // Map of team ID to member user IDs
+      const teamMembersMap = new Map();
+      
+      teamMembersResults.forEach((result, index) => {
+        if (result.error) {
+          console.error(`Error fetching members for team ${teamsData[index].id}:`, result.error);
+          return;
+        }
+        
+        teamMembersMap.set(teamsData[index].id, result.data || []);
+      });
+      
+      // Step 3: Get all activities for this event (throughout the entire duration)
+      const { data: activitiesData, error: activitiesError } = await supabase
+        .from('activities')
+        .select('user_id, activity_minutes, activity_date')
+        .eq('event_id', selectedEvent.id);
+      
+      if (activitiesError) {
+        console.error('Error fetching activities:', activitiesError);
+        setLoading(false);
+        return;
+      }
+      
+      // Step 4: Get user profiles for all users with activities
+      const userIds = [...new Set((activitiesData || []).map(a => a.user_id))];
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+      
+      if (profilesError) {
+        console.error('Error fetching user profiles:', profilesError);
+        setLoading(false);
+        return;
+      }
+      
+      // Create user lookup map
+      const userMap = new Map();
+      profilesData?.forEach(profile => {
+        userMap.set(profile.id, profile);
+      });
+      
+      // Step 5: Calculate activity totals by user
+      const userActivityMap = new Map();
+      
+      (activitiesData || []).forEach(activity => {
+        const currentTotal = userActivityMap.get(activity.user_id) || 0;
+        userActivityMap.set(activity.user_id, currentTotal + activity.activity_minutes);
+      });
+      
+      // Step 6: Build team and user cumulative data
+      const teamData: CumulativeTeamData[] = [];
+      const allUserData: CumulativeMemberData[] = [];
+      
+      // Process team data
+      teamsData.forEach(team => {
+        const teamMembers = teamMembersMap.get(team.id) || [];
+        let totalMinutes = 0;
+        const activeMembers = new Set();
+        const memberData: CumulativeMemberData[] = [];
+        
+        teamMembers.forEach((member: any) => {
+          const userMinutes = userActivityMap.get(member.user_id) || 0;
+          const user = userMap.get(member.user_id);
+          
+          if (user) {
+            // Always include member in the team data, even if they have 0 minutes
+            memberData.push({
+              id: member.user_id,
+              user_id: member.user_id,
+              full_name: user.full_name,
+              email: user.email,
+              total_minutes: userMinutes,
+              team_name: team.team_name,
+              team_id: team.id,
+              rank: 0, // To be set later
+              team_rank: 0 // To be set later
+            });
+            
+            if (userMinutes > 0) {
+              activeMembers.add(member.user_id);
+              totalMinutes += userMinutes;
+              
+              // Add to global user data list
+              allUserData.push({
+                id: member.user_id,
+                user_id: member.user_id,
+                full_name: user.full_name,
+                email: user.email,
+                total_minutes: userMinutes,
+                team_name: team.team_name,
+                team_id: team.id,
+                rank: 0, // To be set later
+                team_rank: 0 // To be set later
+              });
+            }
+          }
+        });
+        
+        // Sort members by minutes and assign team ranks
+        memberData.sort((a, b) => b.total_minutes - a.total_minutes);
+        memberData.forEach((member, index) => {
+          // If same minutes as previous member, keep same rank
+          if (index > 0 && member.total_minutes === memberData[index - 1].total_minutes) {
+            member.team_rank = memberData[index - 1].team_rank;
+          } else {
+            member.team_rank = index + 1;
+          }
+        });
+        
+        teamData.push({
+          id: team.id,
+          team_name: team.team_name,
+          total_minutes: totalMinutes,
+          participants_count: activeMembers.size,
+          rank: 0, // To be set later
+          members: memberData
+        });
+      });
+      
+      // Sort teams by minutes and assign ranks
+      teamData.sort((a, b) => b.total_minutes - a.total_minutes);
+      teamData.forEach((team, index) => {
+        // If same minutes as previous team, keep same rank
+        if (index > 0 && team.total_minutes === teamData[index - 1].total_minutes) {
+          team.rank = teamData[index - 1].rank;
+        } else {
+          team.rank = index + 1;
+        }
+      });
+      
+      // Sort all users and assign global ranks
+      allUserData.sort((a, b) => b.total_minutes - a.total_minutes);
+      allUserData.forEach((user, index) => {
+        // If same minutes as previous user, keep same rank
+        if (index > 0 && user.total_minutes === allUserData[index - 1].total_minutes) {
+          user.rank = allUserData[index - 1].rank;
+        } else {
+          user.rank = index + 1;
+        }
+      });
+      
+      // Set state with the processed data
+      setCumulativeTeamData(teamData);
+      setCumulativeUserData(allUserData);
+      
+    } catch (error) {
+      console.error('Error generating cumulative report:', error);
+      Alert.alert('Error', 'Failed to generate cumulative report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add effect to fetch cumulative report when event changes
+  useEffect(() => {
+    if (selectedEvent && reportType === 'cumulative') {
+      fetchCumulativeReport();
+    }
+  }, [selectedEvent, reportType]);
+
+  // Add handler for selecting a team in cumulative view
+  const handleViewCumulativeTeamDetails = (teamId: string) => {
+    setSelectedCumulativeTeam(teamId);
+  };
+
+  // Add handler for going back from team details
+  const handleBackFromCumulativeTeamDetails = () => {
+    setSelectedCumulativeTeam(null);
+  };
+
+  // Add render functions for cumulative reports
+  const renderCumulativeTeamItem = ({ item }: { item: CumulativeTeamData }) => (
+    <TouchableOpacity 
+      style={styles.reportItem}
+      onPress={() => handleViewCumulativeTeamDetails(item.id)}
+    >
+      <View style={styles.rankBadge}>
+        <ThemedText style={styles.rankText}>{item.rank}</ThemedText>
+      </View>
+      <View style={styles.reportHeader}>
+        <ThemedText style={styles.teamName}>{item.team_name}</ThemedText>
+      </View>
+      <View style={styles.reportDetails}>
+        <View style={styles.reportStat}>
+          <ThemedText style={styles.statLabel}>Total Minutes</ThemedText>
+          <ThemedText style={styles.statValue}>{item.total_minutes}</ThemedText>
+        </View>
+        <View style={styles.reportStat}>
+          <ThemedText style={styles.statLabel}>Participants</ThemedText>
+          <ThemedText style={styles.statValue}>{item.participants_count}</ThemedText>
+        </View>
+        <View style={styles.reportStat}>
+          <ThemedText style={styles.statLabel}>Avg Min/Person</ThemedText>
+          <ThemedText style={styles.statValue}>
+            {item.participants_count > 0 
+              ? Math.round(item.total_minutes / item.participants_count) 
+              : 0}
+          </ThemedText>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderCumulativeMemberItem = ({ item }: { item: CumulativeMemberData }) => (
+    <View style={styles.memberItem}>
+      <View style={styles.rankBadge}>
+        <ThemedText style={styles.rankText}>
+          {selectedCumulativeTeam ? item.team_rank : item.rank}
+        </ThemedText>
+      </View>
+      <View style={styles.memberInfo}>
+        <ThemedText style={styles.memberName}>{item.full_name}</ThemedText>
+        <ThemedText style={styles.memberEmail}>{item.email}</ThemedText>
+        {!selectedCumulativeTeam && (
+          <ThemedText style={styles.userTeam}>Team: {item.team_name}</ThemedText>
+        )}
+      </View>
+      <ThemedText style={styles.memberMinutes}>{item.total_minutes} minutes</ThemedText>
+    </View>
+  );
+
   if (userLoading || loading) {
     return (
       <ThemedView style={styles.container}>
@@ -626,15 +1203,63 @@ export default function AdminReportsScreen() {
         {selectedEvent && (
           <>
             <ThemedView style={styles.section}>
-              <ThemedText type="subtitle">Weekly Team Report</ThemedText>
+              <View style={styles.sectionHeader}>
+                <ThemedText type="subtitle">Event Activity Reports</ThemedText>
+                <View style={styles.reportTypeTabs}>
+                  <TouchableOpacity
+                    style={[
+                      styles.reportTypeTab,
+                      reportType === 'weekly' && styles.activeReportTypeTab
+                    ]}
+                    onPress={() => setReportType('weekly')}
+                  >
+                    <ThemedText style={[
+                      styles.reportTypeTabText,
+                      reportType === 'weekly' && styles.activeReportTypeTabText
+                    ]}>Weekly</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.reportTypeTab,
+                      reportType === 'cumulative' && styles.activeReportTypeTab
+                    ]}
+                    onPress={() => setReportType('cumulative')}
+                  >
+                    <ThemedText style={[
+                      styles.reportTypeTabText,
+                      reportType === 'cumulative' && styles.activeReportTypeTabText
+                    ]}>Cumulative</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              </View>
               
-              <View style={styles.datePickerContainer}>
-                <ThemedText>Week: {formatDateRange()}</ThemedText>
+              <View style={styles.weekNavigationContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.weekNavButton,
+                    styles.weekNavButtonLeft
+                  ]}
+                  onPress={() => navigateToWeek('prev')}
+                >
+                  <Ionicons name="chevron-back" size={20} color="#0a7ea4" />
+                </TouchableOpacity>
+                
                 <TouchableOpacity
                   style={styles.datePickerButton}
                   onPress={() => setShowDatePicker(true)}
                 >
-                  <ThemedText style={styles.datePickerButtonText}>Change Week</ThemedText>
+                  <ThemedText style={styles.weekLabel}>Week: {formatDateRange()}</ThemedText>
+                  <Ionicons name="calendar-outline" size={20} color="white" />
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.weekNavButton,
+                    styles.weekNavButtonRight
+                  ]}
+                  onPress={() => navigateToWeek('next')}
+                >
+                  <Ionicons name="chevron-forward" size={20} color="#0a7ea4" />
                 </TouchableOpacity>
                 
                 {showDatePicker && (
@@ -647,110 +1272,282 @@ export default function AdminReportsScreen() {
                 )}
               </View>
               
-              {weeklyReports.length > 0 ? (
-                <FlatList
-                  data={weeklyReports}
-                  renderItem={renderTeamReportItem}
-                  keyExtractor={(item) => item.id}
-                  style={styles.reportsList}
-                />
+              <View style={styles.reportTabs}>
+                <TouchableOpacity
+                  style={[
+                    styles.reportTab,
+                    weeklyReportView === 'teams' && styles.activeReportTab
+                  ]}
+                  onPress={() => setWeeklyReportView('teams')}
+                >
+                  <ThemedText style={[
+                    styles.reportTabText,
+                    weeklyReportView === 'teams' && styles.activeReportTabText
+                  ]}>Teams</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.reportTab,
+                    weeklyReportView === 'users' && styles.activeReportTab
+                  ]}
+                  onPress={() => setWeeklyReportView('users')}
+                >
+                  <ThemedText style={[
+                    styles.reportTabText,
+                    weeklyReportView === 'users' && styles.activeReportTabText
+                  ]}>All Users</ThemedText>
+                </TouchableOpacity>
+              </View>
+              
+              {selectedTeam && teamDetails ? (
+                // Team details view
+                <View style={styles.teamDetailsContainer}>
+                  <View style={styles.teamDetailHeader}>
+                    <TouchableOpacity
+                      style={styles.backButton}
+                      onPress={handleBackFromTeamDetails}
+                    >
+                      <ThemedText style={styles.backButtonText}>← Back to Teams</ThemedText>
+                    </TouchableOpacity>
+                    <ThemedText style={styles.teamDetailTitle}>{teamDetails.team_name} Members</ThemedText>
+                  </View>
+                  
+                  {teamDetails.members.length > 0 ? (
+                    <FlatList
+                      data={teamDetails.members}
+                      renderItem={renderTeamMemberItem}
+                      keyExtractor={(item) => item.id}
+                      style={styles.membersList}
+                    />
+                  ) : (
+                    <ThemedText style={styles.emptyText}>No member activity found for this week.</ThemedText>
+                  )}
+                </View>
+              ) : weeklyReportView === 'teams' ? (
+                // Teams view
+                weeklyReports.length > 0 ? (
+                  <>
+                    <FlatList
+                      data={weeklyReports}
+                      renderItem={renderTeamReportItem}
+                      keyExtractor={(item) => item.id}
+                      style={styles.reportsList}
+                    />
+                    {weeklyReports.length > 0 && (
+                      <SimpleBarChart 
+                        data={weeklyReports.map(team => ({ 
+                          label: team.team_name, 
+                          value: team.total_minutes 
+                        }))}
+                        maxValue={Math.max(...weeklyReports.map(team => team.total_minutes), 1)}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <ThemedText style={styles.emptyText}>
+                    No team activity data found for this week.
+                  </ThemedText>
+                )
               ) : (
-                <ThemedText style={styles.emptyText}>
-                  No team activity data found for this week.
-                </ThemedText>
+                // All users view
+                allUsersActivity.length > 0 ? (
+                  <FlatList
+                    data={allUsersActivity}
+                    renderItem={renderAllUserItem}
+                    keyExtractor={(item) => item.id}
+                    style={styles.usersList}
+                  />
+                ) : (
+                  <ThemedText style={styles.emptyText}>
+                    No user activity found for this week.
+                  </ThemedText>
+                )
               )}
             </ThemedView>
             
-            <ThemedView style={styles.section}>
-              <ThemedText type="subtitle">Milestone Achievements</ThemedText>
-              
-              {eventMilestones.length > 0 ? (
-                <View style={styles.milestoneTabs}>
-                  {eventMilestones.map(milestone => {
-                    // Count achievements for this milestone
-                    const count = milestoneAchievements.filter(
-                      a => a.milestone_id === milestone.id
-                    ).length;
-                    
-                    // Count unrewarded achievements
-                    const unrewardedCount = milestoneAchievements.filter(
-                      a => a.milestone_id === milestone.id && !a.rewarded
-                    ).length;
-                    
-                    return (
-                      <TouchableOpacity
-                        key={milestone.id}
-                        style={[
-                          styles.milestoneTab,
-                          selectedMilestone === milestone.id && styles.selectedMilestoneTab
-                        ]}
-                        onPress={() => {
-                          console.log(`Setting selected milestone to: ${milestone.id}`);
-                          setSelectedMilestone(milestone.id);
-                        }}
-                      >
-                        <View style={[
-                          styles.tabIndicator, 
-                          milestone.milestone_minutes === 50 ? styles.bronze :
-                          milestone.milestone_minutes === 250 ? styles.silver :
-                          styles.gold
-                        ]} />
-                        <ThemedText style={styles.milestoneTabText}>
-                          {milestone.milestone_name} ({milestone.milestone_minutes}m) - {count} 
-                          {unrewardedCount > 0 && ` (${unrewardedCount} unrewarded)`}
-                        </ThemedText>
-                      </TouchableOpacity>
-                    );
-                  })}
+            {reportType === 'cumulative' && (
+              <>
+                <View style={styles.reportTabs}>
+                  <TouchableOpacity
+                    style={[
+                      styles.reportTab,
+                      cumulativeView === 'teams' && styles.activeReportTab
+                    ]}
+                    onPress={() => {
+                      setCumulativeView('teams');
+                      setSelectedCumulativeTeam(null);
+                    }}
+                  >
+                    <ThemedText style={[
+                      styles.reportTabText,
+                      cumulativeView === 'teams' && styles.activeReportTabText
+                    ]}>Teams Ranking</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.reportTab,
+                      cumulativeView === 'users' && styles.activeReportTab
+                    ]}
+                    onPress={() => {
+                      setCumulativeView('users');
+                      setSelectedCumulativeTeam(null);
+                    }}
+                  >
+                    <ThemedText style={[
+                      styles.reportTabText,
+                      cumulativeView === 'users' && styles.activeReportTabText
+                    ]}>All Users Ranking</ThemedText>
+                  </TouchableOpacity>
                 </View>
-              ) : (
-                <ThemedText style={styles.emptyText}>
-                  No milestones defined for this event.
-                </ThemedText>
-              )}
-              
-              {selectedMilestone === null ? (
-                // Show all achievements when no milestone is selected
-                <>
-                  {milestoneAchievements.length > 0 ? (
-                    <>
-                      <ThemedText style={styles.infoText}>
-                        Showing all {milestoneAchievements.length} achievements across all milestones. 
-                        Select a specific milestone above to filter.
+                
+                {selectedCumulativeTeam && cumulativeView === 'teams' ? (
+                  // Team members view
+                  <View style={styles.teamDetailsContainer}>
+                    <View style={styles.teamDetailHeader}>
+                      <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={handleBackFromCumulativeTeamDetails}
+                      >
+                        <ThemedText style={styles.backButtonText}>← Back to Teams</ThemedText>
+                      </TouchableOpacity>
+                      <ThemedText style={styles.teamDetailTitle}>
+                        {cumulativeTeamData.find(t => t.id === selectedCumulativeTeam)?.team_name} Members
                       </ThemedText>
+                    </View>
+                    
+                    {(cumulativeTeamData.find(t => t.id === selectedCumulativeTeam)?.members || []).length > 0 ? (
                       <FlatList
-                        data={getAllAchievements()}
-                        renderItem={renderMilestoneItem}
+                        data={cumulativeTeamData.find(t => t.id === selectedCumulativeTeam)?.members || []}
+                        renderItem={renderCumulativeMemberItem}
                         keyExtractor={(item) => item.id}
-                        style={styles.milestonesList}
+                        style={styles.membersList}
                       />
-                    </>
-                  ) : (
-                    <ThemedText style={styles.emptyText}>
-                      No milestone achievements found for this event.
-                    </ThemedText>
-                  )}
-                </>
-              ) : (
-                // A specific milestone is selected
-                <>
-                  {filterAchievementsBySelectedMilestone().length > 0 ? (
+                    ) : (
+                      <ThemedText style={styles.emptyText}>No member activity found.</ThemedText>
+                    )}
+                  </View>
+                ) : cumulativeView === 'teams' ? (
+                  // Teams ranking view
+                  cumulativeTeamData.length > 0 ? (
                     <FlatList
-                      data={filterAchievementsBySelectedMilestone()}
-                      renderItem={renderMilestoneItem}
+                      data={cumulativeTeamData}
+                      renderItem={renderCumulativeTeamItem}
                       keyExtractor={(item) => item.id}
-                      style={styles.milestonesList}
+                      style={styles.reportsList}
                     />
                   ) : (
                     <ThemedText style={styles.emptyText}>
-                      No users have achieved this milestone yet.
+                      No team activity data found for this event.
                     </ThemedText>
-                  )}
-                </>
-              )}
-            </ThemedView>
+                  )
+                ) : (
+                  // All users ranking view
+                  cumulativeUserData.length > 0 ? (
+                    <FlatList
+                      data={cumulativeUserData}
+                      renderItem={renderCumulativeMemberItem}
+                      keyExtractor={(item) => item.id}
+                      style={styles.usersList}
+                    />
+                  ) : (
+                    <ThemedText style={styles.emptyText}>
+                      No user activity found for this event.
+                    </ThemedText>
+                  )
+                )}
+              </>
+            )}
           </>
         )}
+        
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle">Milestone Achievements</ThemedText>
+          
+          {eventMilestones.length > 0 ? (
+            <View style={styles.milestoneTabs}>
+              {eventMilestones.map(milestone => {
+                // Count achievements for this milestone
+                const count = milestoneAchievements.filter(
+                  a => a.milestone_id === milestone.id
+                ).length;
+                
+                // Count unrewarded achievements
+                const unrewardedCount = milestoneAchievements.filter(
+                  a => a.milestone_id === milestone.id && !a.rewarded
+                ).length;
+                
+                return (
+                  <TouchableOpacity
+                    key={milestone.id}
+                    style={[
+                      styles.milestoneTab,
+                      selectedMilestone === milestone.id && styles.selectedMilestoneTab
+                    ]}
+                    onPress={() => {
+                      console.log(`Setting selected milestone to: ${milestone.id}`);
+                      setSelectedMilestone(milestone.id);
+                    }}
+                  >
+                    <View style={[
+                      styles.tabIndicator, 
+                      milestone.milestone_minutes === 50 ? styles.bronze :
+                      milestone.milestone_minutes === 250 ? styles.silver :
+                      styles.gold
+                    ]} />
+                    <ThemedText style={styles.milestoneTabText}>
+                      {milestone.milestone_name} ({milestone.milestone_minutes}m) - {count} 
+                      {unrewardedCount > 0 && ` (${unrewardedCount} unrewarded)`}
+                    </ThemedText>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : (
+            <ThemedText style={styles.emptyText}>
+              No milestones defined for this event.
+            </ThemedText>
+          )}
+          
+          {selectedMilestone === null ? (
+            // Show all achievements when no milestone is selected
+            <>
+              {milestoneAchievements.length > 0 ? (
+                <>
+                  <ThemedText style={styles.infoText}>
+                    Showing all {milestoneAchievements.length} achievements across all milestones. 
+                    Select a specific milestone above to filter.
+                  </ThemedText>
+                  <FlatList
+                    data={getAllAchievements()}
+                    renderItem={renderMilestoneItem}
+                    keyExtractor={(item) => item.id}
+                    style={styles.milestonesList}
+                  />
+                </>
+              ) : (
+                <ThemedText style={styles.emptyText}>
+                  No milestone achievements found for this event.
+                </ThemedText>
+              )}
+            </>
+          ) : (
+            // A specific milestone is selected
+            <>
+              {filterAchievementsBySelectedMilestone().length > 0 ? (
+                <FlatList
+                  data={filterAchievementsBySelectedMilestone()}
+                  renderItem={renderMilestoneItem}
+                  keyExtractor={(item) => item.id}
+                  style={styles.milestonesList}
+                />
+              ) : (
+                <ThemedText style={styles.emptyText}>
+                  No users have achieved this milestone yet.
+                </ThemedText>
+              )}
+            </>
+          )}
+        </ThemedView>
       </ThemedView>
     </ScrollView>
   );
@@ -797,19 +1594,101 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
-  datePickerContainer: {
+  sectionHeader: {
+    flexDirection: 'column',
+    marginBottom: 16,
+  },
+  reportTypeTabs: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  reportTypeTab: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginRight: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+  },
+  activeReportTypeTab: {
+    backgroundColor: '#0a7ea4',
+  },
+  reportTypeTabText: {
+    color: '#666',
+  },
+  activeReportTypeTabText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  weekNavigationContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginVertical: 16,
   },
+  weekNavButton: {
+    padding: 10,
+    borderRadius: 4,
+    backgroundColor: '#f0f0f0',
+  },
+  weekNavButtonLeft: {
+    marginRight: 8,
+  },
+  weekNavButtonRight: {
+    marginLeft: 8,
+  },
   datePickerButton: {
-    padding: 8,
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
     backgroundColor: '#0a7ea4',
     borderRadius: 4,
   },
-  datePickerButtonText: {
+  weekLabel: {
     color: 'white',
+    marginRight: 8,
+  },
+  chartContainer: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  chartItemContainer: {
+    marginBottom: 12,
+  },
+  chartLabel: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  barContainer: {
+    height: 24,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 4,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  bar: {
+    height: '100%',
+    backgroundColor: '#0a7ea4',
+    borderRadius: 4,
+  },
+  barValue: {
+    position: 'absolute',
+    right: 8,
+    top: 3,
+    fontSize: 12,
+    color: 'white',
+    fontWeight: 'bold',
   },
   reportsList: {
     marginTop: 16,
@@ -957,5 +1836,114 @@ const styles = StyleSheet.create({
     marginVertical: 12,
     color: '#666',
     fontStyle: 'italic',
+  },
+  reportTabs: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  reportTab: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginRight: 10,
+  },
+  activeReportTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#0a7ea4',
+  },
+  reportTabText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  activeReportTabText: {
+    fontWeight: 'bold',
+    color: '#0a7ea4',
+  },
+  teamDetailsContainer: {
+    flex: 1,
+  },
+  teamDetailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  teamDetailTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 4,
+    backgroundColor: '#f0f0f0',
+  },
+  backButtonText: {
+    color: '#0a7ea4',
+  },
+  membersList: {
+    flex: 1,
+  },
+  memberItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  memberEmail: {
+    fontSize: 12,
+    color: '#666',
+  },
+  memberMinutes: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#0a7ea4',
+  },
+  usersList: {
+    flex: 1,
+  },
+  userItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userTeam: {
+    fontSize: 12,
+    color: '#0a7ea4',
+    marginTop: 4,
+  },
+  userMinutes: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#0a7ea4',
+  },
+  rankBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#0a7ea4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  rankText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 }); 
