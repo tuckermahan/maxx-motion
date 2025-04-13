@@ -13,6 +13,11 @@ type User = {
   avatar_url?: string;
 };
 
+type CreateCaptainForm = {
+  full_name: string;
+  email: string;
+};
+
 export default function CreateTeamScreen() {
   const params = useLocalSearchParams();
   const eventId = params.eventId as string;
@@ -24,7 +29,11 @@ export default function CreateTeamScreen() {
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [selectedCaptain, setSelectedCaptain] = useState<User | null>(null);
   const [showUserSearch, setShowUserSearch] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
+  const [showCreateCaptain, setShowCreateCaptain] = useState(false);
+  const [newCaptain, setNewCaptain] = useState<CreateCaptainForm>({
+    full_name: '',
+    email: '',
+  });
   const [eventName, setEventName] = useState('');
 
   // Redirect non-admin users
@@ -100,6 +109,7 @@ export default function CreateTeamScreen() {
   const handleSelectCaptain = (user: User) => {
     setSelectedCaptain(user);
     setShowUserSearch(false);
+    setShowCreateCaptain(false);
   };
 
   const validateForm = () => {
@@ -116,17 +126,106 @@ export default function CreateTeamScreen() {
     return re.test(email);
   };
 
+  const validateNewCaptain = () => {
+    if (!newCaptain.full_name.trim()) {
+      Alert.alert('Error', 'Please enter captain name');
+      return false;
+    }
+
+    if (!newCaptain.email.trim() || !validateEmail(newCaptain.email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return false;
+    }
+
+    return true;
+  };
+
+  const createCaptainProfile = async (): Promise<User | null> => {
+    if (!validateNewCaptain()) return null;
+
+    try {
+      setIsLoading(true);
+
+      // Check if user with this email already exists
+      const { data: existingUser, error: existingUserError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url')
+        .eq('email', newCaptain.email)
+        .maybeSingle();
+
+      if (existingUserError && existingUserError.code !== 'PGRST116') {
+        console.error('Error checking for existing user:', existingUserError);
+        Alert.alert('Error', 'Failed to check if user already exists');
+        return null;
+      }
+
+      // If user exists, return that user
+      if (existingUser) {
+        Alert.alert('Notice', 'A user with this email already exists. Using existing user as team captain.');
+        return existingUser as User;
+      }
+
+      // Create the auth user first (would normally happen through sign-up)
+      // For admin purposes, we'll create a placeholder auth user
+      // In a full implementation, you might send an invitation email instead
+      
+      // Instead, let's create just a profile entry since we're adding this manually
+      const userId = crypto.randomUUID(); // Generate a random UUID for the profile
+      
+      const { data: newUser, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          full_name: newCaptain.full_name,
+          email: newCaptain.email,
+          created_at: new Date().toISOString(),
+          is_admin: false
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Error creating new captain profile:', createError);
+        Alert.alert('Error', 'Failed to create new captain profile');
+        return null;
+      }
+
+      Alert.alert('Success', 'New captain profile created');
+      return newUser as User;
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      Alert.alert('Error', 'An unexpected error occurred');
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCreateTeam = async () => {
     if (!validateForm()) return;
 
     try {
       setIsLoading(true);
+      
+      // If trying to create a new captain, do that first
+      let captainToUse = selectedCaptain;
+      
+      if (showCreateCaptain && !selectedCaptain) {
+        const newCaptainUser = await createCaptainProfile();
+        if (newCaptainUser) {
+          captainToUse = newCaptainUser;
+        } else {
+          // If captain creation failed, exit
+          setIsLoading(false);
+          return;
+        }
+      }
 
       // Create the team
       const teamData = {
         event_id: eventId,
         team_name: teamName,
-        captain_id: selectedCaptain?.id
+        captain_id: captainToUse?.id
       };
 
       const { data: createdTeam, error } = await supabase
@@ -140,17 +239,14 @@ export default function CreateTeamScreen() {
         return;
       }
 
-      // If invited by email and no captain selected
-      if (inviteEmail && !selectedCaptain && validateEmail(inviteEmail)) {
-        // We'd send an invitation email here in a real-world scenario
-        Alert.alert('Note', `Invitation will be sent to ${inviteEmail}`);
-      }
-
-      Alert.alert(
-        'Success', 
-        'Team created successfully', 
-        [{ text: 'OK', onPress: () => router.push('/admin/setup' as any) }]
-      );
+      // Show success message
+      Alert.alert('Success', 'Team created successfully');
+      
+      // Navigate back to setup
+      console.log('Navigating to admin setup after team creation');
+      setTimeout(() => {
+        router.replace('/admin/setup' as any);
+      }, 500);
     } catch (error) {
       console.error('Unexpected error:', error);
       Alert.alert('Error', 'An unexpected error occurred');
@@ -194,43 +290,45 @@ export default function CreateTeamScreen() {
         <ThemedView style={styles.formGroup}>
           <ThemedText style={styles.label}>Team Captain</ThemedText>
           
-          {!showUserSearch ? (
-            <>
-              {selectedCaptain ? (
-                <View style={styles.selectedUserContainer}>
-                  <ThemedText style={styles.selectedUserName}>
-                    {selectedCaptain.full_name} ({selectedCaptain.email})
-                  </ThemedText>
-                  <TouchableOpacity onPress={() => setSelectedCaptain(null)}>
-                    <ThemedText style={styles.removeText}>Remove</ThemedText>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.captainOptions}>
-                  <TouchableOpacity 
-                    style={styles.optionButton}
-                    onPress={() => setShowUserSearch(true)}
-                  >
-                    <ThemedText style={styles.optionButtonText}>Select Existing User</ThemedText>
-                  </TouchableOpacity>
-                  
-                  <ThemedText style={styles.orText}>OR</ThemedText>
-                  
-                  <View style={styles.emailContainer}>
-                    <ThemedText style={styles.emailLabel}>Invite by Email:</ThemedText>
-                    <TextInput
-                      style={[styles.input, styles.emailInput]}
-                      value={inviteEmail}
-                      onChangeText={setInviteEmail}
-                      placeholder="captain@example.com"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                    />
-                  </View>
-                </View>
-              )}
-            </>
-          ) : (
+          {/* Selected captain display */}
+          {selectedCaptain && (
+            <View style={styles.selectedUserContainer}>
+              <ThemedText style={styles.selectedUserName}>
+                {selectedCaptain.full_name} ({selectedCaptain.email})
+              </ThemedText>
+              <TouchableOpacity onPress={() => setSelectedCaptain(null)}>
+                <ThemedText style={styles.removeText}>Remove</ThemedText>
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          {/* Captain options when no captain is selected */}
+          {!selectedCaptain && !showUserSearch && !showCreateCaptain && (
+            <View style={styles.captainOptions}>
+              <TouchableOpacity 
+                style={styles.optionButton}
+                onPress={() => {
+                  setShowUserSearch(true);
+                  setShowCreateCaptain(false);
+                }}
+              >
+                <ThemedText style={styles.optionButtonText}>Select Existing User</ThemedText>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.optionButton}
+                onPress={() => {
+                  setShowCreateCaptain(true);
+                  setShowUserSearch(false);
+                }}
+              >
+                <ThemedText style={styles.optionButtonText}>Create New Captain</ThemedText>
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          {/* User search interface */}
+          {showUserSearch && (
             <View style={styles.searchContainer}>
               <View style={styles.searchRow}>
                 <TextInput
@@ -270,6 +368,52 @@ export default function CreateTeamScreen() {
               >
                 <ThemedText style={styles.cancelSearchText}>Cancel Search</ThemedText>
               </TouchableOpacity>
+            </View>
+          )}
+          
+          {/* Create new captain form */}
+          {showCreateCaptain && (
+            <View style={styles.createCaptainContainer}>
+              <ThemedText style={styles.sectionTitle}>Create New Captain</ThemedText>
+              
+              <ThemedText style={styles.inputLabel}>Full Name</ThemedText>
+              <TextInput
+                style={styles.input}
+                value={newCaptain.full_name}
+                onChangeText={(text) => setNewCaptain({...newCaptain, full_name: text})}
+                placeholder="Enter captain's full name"
+              />
+              
+              <ThemedText style={[styles.inputLabel, {marginTop: 12}]}>Email</ThemedText>
+              <TextInput
+                style={styles.input}
+                value={newCaptain.email}
+                onChangeText={(text) => setNewCaptain({...newCaptain, email: text})}
+                placeholder="Enter captain's email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              
+              <View style={styles.createCaptainActions}>
+                <TouchableOpacity 
+                  style={styles.cancelButton}
+                  onPress={() => setShowCreateCaptain(false)}
+                >
+                  <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.applyButton}
+                  onPress={async () => {
+                    const newUser = await createCaptainProfile();
+                    if (newUser) {
+                      handleSelectCaptain(newUser);
+                    }
+                  }}
+                >
+                  <ThemedText style={styles.applyButtonText}>Create & Select</ThemedText>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </ThemedView>
@@ -343,20 +487,6 @@ const styles = StyleSheet.create({
   optionButtonText: {
     fontSize: 16,
   },
-  orText: {
-    textAlign: 'center',
-    marginVertical: 12,
-    fontSize: 16,
-  },
-  emailContainer: {
-    marginTop: 8,
-  },
-  emailLabel: {
-    marginBottom: 8,
-  },
-  emailInput: {
-    marginTop: 4,
-  },
   searchContainer: {
     marginTop: 8,
   },
@@ -418,6 +548,40 @@ const styles = StyleSheet.create({
   },
   removeText: {
     color: 'red',
+    fontSize: 14,
+  },
+  createCaptainContainer: {
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  inputLabel: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  createCaptainActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  applyButton: {
+    flex: 1,
+    backgroundColor: '#0a7ea4',
+    padding: 10,
+    borderRadius: 4,
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  applyButtonText: {
+    color: 'white',
     fontSize: 14,
   },
   buttonContainer: {

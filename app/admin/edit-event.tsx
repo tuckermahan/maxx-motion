@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
+import { StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator, Platform, FlatList } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useUser } from '../../contexts/UserContext';
@@ -11,6 +11,22 @@ type Milestone = {
   event_id: string;
   milestone_minutes: number;
   milestone_name: string;
+};
+
+type Team = {
+  id: string;
+  event_id: string;
+  team_name: string;
+  captain_id?: string;
+  captain_name?: string;
+  captain_email?: string;
+};
+
+type User = {
+  id: string;
+  full_name: string;
+  email: string;
+  avatar_url?: string;
 };
 
 export default function EditEventScreen() {
@@ -25,6 +41,13 @@ export default function EditEventScreen() {
   const [eventYear, setEventYear] = useState(new Date().getFullYear().toString());
   const [status, setStatus] = useState<'Upcoming' | 'Active' | 'Archive'>('Upcoming');
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isAddingTeam, setIsAddingTeam] = useState(false);
+  const [newTeamName, setNewTeamName] = useState('');
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [captainSearchQuery, setCaptainSearchQuery] = useState('');
+  const [captainSearchResults, setCaptainSearchResults] = useState<User[]>([]);
+  const [showCaptainSearch, setShowCaptainSearch] = useState(false);
   
   const isWeb = Platform.OS === 'web';
 
@@ -68,6 +91,9 @@ export default function EditEventScreen() {
         setEventYear(data.event_year?.toString() || new Date().getFullYear().toString());
         setStatus(data.status);
       }
+
+      // After fetching event details, fetch teams
+      await fetchTeams();
     } catch (error) {
       console.error('Unexpected error:', error);
       Alert.alert('Error', 'An unexpected error occurred');
@@ -94,6 +120,49 @@ export default function EditEventScreen() {
     } catch (error) {
       console.error('Unexpected error:', error);
       Alert.alert('Error', 'An unexpected error occurred');
+    }
+  };
+
+  const fetchTeams = async () => {
+    try {
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('team_name');
+      
+      if (teamsError) {
+        console.error('Error fetching teams:', teamsError);
+        return;
+      }
+      
+      // Fetch captain details for each team
+      const enhancedTeams = [];
+      for (const team of teamsData || []) {
+        if (team.captain_id) {
+          const { data: captainData } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', team.captain_id)
+            .single();
+          
+          if (captainData) {
+            enhancedTeams.push({
+              ...team,
+              captain_name: captainData.full_name,
+              captain_email: captainData.email
+            });
+          } else {
+            enhancedTeams.push(team);
+          }
+        } else {
+          enhancedTeams.push(team);
+        }
+      }
+      
+      setTeams(enhancedTeams);
+    } catch (error) {
+      console.error('Error fetching teams:', error);
     }
   };
 
@@ -300,6 +369,158 @@ export default function EditEventScreen() {
     }
   };
 
+  const searchCaptains = async () => {
+    if (!captainSearchQuery.trim()) {
+      Alert.alert('Error', 'Please enter a search term');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .or(`full_name.ilike.%${captainSearchQuery}%,email.ilike.%${captainSearchQuery}%`)
+        .limit(10);
+      
+      if (error) {
+        console.error('Error searching captains:', error);
+        Alert.alert('Error', 'Failed to search users');
+        return;
+      }
+      
+      setCaptainSearchResults(data || []);
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      Alert.alert('Error', 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddTeam = async () => {
+    if (!newTeamName.trim()) {
+      Alert.alert('Error', 'Please enter a team name');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('teams')
+        .insert({
+          event_id: eventId,
+          team_name: newTeamName,
+        })
+        .select();
+      
+      if (error) {
+        console.error('Error adding team:', error);
+        Alert.alert('Error', 'Failed to add team');
+        return;
+      }
+      
+      // Reset form and fetch teams
+      setNewTeamName('');
+      setIsAddingTeam(false);
+      await fetchTeams();
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      Alert.alert('Error', 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateTeamName = async (teamId: string, newName: string) => {
+    if (!newName.trim()) {
+      Alert.alert('Error', 'Team name cannot be empty');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { error } = await supabase
+        .from('teams')
+        .update({ team_name: newName })
+        .eq('id', teamId);
+      
+      if (error) {
+        console.error('Error updating team:', error);
+        Alert.alert('Error', 'Failed to update team');
+        return;
+      }
+      
+      setEditingTeamId(null);
+      await fetchTeams();
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      Alert.alert('Error', 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSetTeamCaptain = async (teamId: string, captainId: string) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase
+        .from('teams')
+        .update({ captain_id: captainId })
+        .eq('id', teamId);
+      
+      if (error) {
+        console.error('Error setting team captain:', error);
+        Alert.alert('Error', 'Failed to set team captain');
+        return;
+      }
+      
+      setShowCaptainSearch(false);
+      await fetchTeams();
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      Alert.alert('Error', 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemoveTeam = async (teamId: string) => {
+    Alert.alert(
+      'Remove Team',
+      'Are you sure you want to remove this team?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Remove', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              const { error } = await supabase
+                .from('teams')
+                .delete()
+                .eq('id', teamId);
+              
+              if (error) {
+                console.error('Error removing team:', error);
+                Alert.alert('Error', 'Failed to remove team');
+                return;
+              }
+              
+              await fetchTeams();
+            } catch (error) {
+              console.error('Unexpected error:', error);
+              Alert.alert('Error', 'An unexpected error occurred');
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (userLoading || isLoading) {
     return (
       <ThemedView style={styles.container}>
@@ -475,6 +696,193 @@ export default function EditEventScreen() {
           )}
         </ThemedView>
 
+        <ThemedView style={styles.formGroup}>
+          <View style={styles.sectionHeader}>
+            <ThemedText style={styles.label}>Teams</ThemedText>
+            {!isAddingTeam && (
+              <TouchableOpacity 
+                style={styles.addButton}
+                onPress={() => setIsAddingTeam(true)}
+              >
+                <ThemedText style={styles.addButtonText}>+ Add Team</ThemedText>
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          {/* Add team form */}
+          {isAddingTeam && (
+            <View style={styles.addTeamForm}>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter team name"
+                value={newTeamName}
+                onChangeText={setNewTeamName}
+              />
+              <View style={styles.teamActionButtons}>
+                <TouchableOpacity 
+                  style={styles.cancelActionButton}
+                  onPress={() => {
+                    setIsAddingTeam(false);
+                    setNewTeamName('');
+                  }}
+                >
+                  <ThemedText>Cancel</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.addActionButton}
+                  onPress={handleAddTeam}
+                >
+                  <ThemedText style={{color: 'white'}}>Add Team</ThemedText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          
+          {/* Teams list */}
+          {teams.length > 0 ? (
+            <View style={styles.teamsList}>
+              {teams.map(team => (
+                <View key={team.id} style={styles.teamItem}>
+                  {/* Team name (editable) */}
+                  {editingTeamId === team.id ? (
+                    <View style={styles.editTeamNameContainer}>
+                      <TextInput
+                        style={styles.input}
+                        value={team.team_name}
+                        onChangeText={(text) => {
+                          setTeams(teams.map(t => 
+                            t.id === team.id ? {...t, team_name: text} : t
+                          ));
+                        }}
+                      />
+                      <View style={styles.teamActionButtons}>
+                        <TouchableOpacity 
+                          style={styles.cancelActionButton}
+                          onPress={() => setEditingTeamId(null)}
+                        >
+                          <ThemedText>Cancel</ThemedText>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.addActionButton}
+                          onPress={() => handleUpdateTeamName(team.id, team.team_name)}
+                        >
+                          <ThemedText style={{color: 'white'}}>Save</ThemedText>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.teamNameRow}>
+                      <ThemedText style={styles.teamName}>{team.team_name}</ThemedText>
+                      <TouchableOpacity 
+                        onPress={() => setEditingTeamId(team.id)}
+                        style={styles.editButton}
+                      >
+                        <ThemedText style={styles.editText}>Edit</ThemedText>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  
+                  {/* Team captain */}
+                  <View style={styles.teamCaptainSection}>
+                    <ThemedText style={styles.teamSectionTitle}>Captain:</ThemedText>
+                    {team.captain_name ? (
+                      <View style={styles.captainInfo}>
+                        <ThemedText>{team.captain_name}</ThemedText>
+                        <ThemedText style={styles.captainEmail}>{team.captain_email}</ThemedText>
+                        <TouchableOpacity 
+                          onPress={() => {
+                            setShowCaptainSearch(true);
+                            setEditingTeamId(team.id);
+                          }}
+                          style={styles.changeCaptainButton}
+                        >
+                          <ThemedText style={styles.editText}>Change</ThemedText>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity 
+                        onPress={() => {
+                          setShowCaptainSearch(true);
+                          setEditingTeamId(team.id);
+                        }}
+                        style={styles.addCaptainButton}
+                      >
+                        <ThemedText style={styles.editText}>Assign Captain</ThemedText>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  
+                  {/* Captain search UI */}
+                  {showCaptainSearch && editingTeamId === team.id && (
+                    <View style={styles.captainSearchContainer}>
+                      <View style={styles.searchRow}>
+                        <TextInput
+                          style={[styles.input, {flex: 1}]}
+                          placeholder="Search by name or email"
+                          value={captainSearchQuery}
+                          onChangeText={setCaptainSearchQuery}
+                        />
+                        <TouchableOpacity 
+                          style={styles.searchButton}
+                          onPress={searchCaptains}
+                        >
+                          <ThemedText style={{color: 'white'}}>Search</ThemedText>
+                        </TouchableOpacity>
+                      </View>
+                      
+                      {captainSearchResults.length > 0 && (
+                        <FlatList
+                          data={captainSearchResults}
+                          keyExtractor={item => item.id}
+                          renderItem={({ item }) => (
+                            <TouchableOpacity 
+                              style={styles.searchResultItem}
+                              onPress={() => handleSetTeamCaptain(team.id, item.id)}
+                            >
+                              <ThemedText style={styles.resultName}>{item.full_name}</ThemedText>
+                              <ThemedText style={styles.resultEmail}>{item.email}</ThemedText>
+                            </TouchableOpacity>
+                          )}
+                          style={styles.searchResultsList}
+                        />
+                      )}
+                      
+                      <TouchableOpacity 
+                        style={styles.cancelButton}
+                        onPress={() => {
+                          setShowCaptainSearch(false);
+                          setCaptainSearchQuery('');
+                          setCaptainSearchResults([]);
+                        }}
+                      >
+                        <ThemedText>Cancel Search</ThemedText>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  
+                  {/* Team actions */}
+                  <View style={styles.teamActions}>
+                    <TouchableOpacity 
+                      style={styles.removeTeamButton}
+                      onPress={() => handleRemoveTeam(team.id)}
+                    >
+                      <ThemedText style={styles.removeText}>Remove Team</ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.manageTeamButton}
+                      onPress={() => router.push(`/admin/edit-team?id=${team.id}` as any)}
+                    >
+                      <ThemedText style={styles.manageText}>Advanced Edit</ThemedText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <ThemedText style={styles.emptyText}>No teams found. Add a team to get started.</ThemedText>
+          )}
+        </ThemedView>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={styles.cancelButton}
@@ -635,5 +1043,131 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: 'white',
     fontSize: 16,
+  },
+  addTeamForm: {
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  teamActionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+  },
+  cancelActionButton: {
+    padding: 8,
+    borderRadius: 4,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  addActionButton: {
+    backgroundColor: '#0a7ea4',
+    padding: 8,
+    borderRadius: 4,
+  },
+  teamsList: {
+    marginTop: 12,
+  },
+  teamItem: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    padding: 12,
+    marginBottom: 12,
+  },
+  teamNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  teamName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  editButton: {
+    padding: 4,
+  },
+  editText: {
+    color: '#0a7ea4',
+  },
+  teamCaptainSection: {
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  teamSectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  captainInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  captainEmail: {
+    color: '#666',
+    marginLeft: 8,
+  },
+  changeCaptainButton: {
+    marginLeft: 8,
+  },
+  addCaptainButton: {
+    padding: 4,
+    alignSelf: 'flex-start',
+  },
+  captainSearchContainer: {
+    marginTop: 8,
+    marginBottom: 12,
+    padding: 12,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 4,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  searchButton: {
+    backgroundColor: '#0a7ea4',
+    padding: 8,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  searchResultsList: {
+    maxHeight: 200,
+    marginBottom: 8,
+  },
+  searchResultItem: {
+    padding: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  resultName: {
+    fontWeight: 'bold',
+  },
+  resultEmail: {
+    color: '#666',
+    fontSize: 12,
+  },
+  editTeamNameContainer: {
+    marginBottom: 12,
+  },
+  teamActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  removeTeamButton: {
+    padding: 8,
+  },
+  removeText: {
+    color: 'red',
+  },
+  manageTeamButton: {
+    padding: 8,
+  },
+  manageText: {
+    color: '#0a7ea4',
   },
 }); 

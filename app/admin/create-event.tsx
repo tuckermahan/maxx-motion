@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
+import { StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator, Platform, FlatList } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useUser } from '../../contexts/UserContext';
@@ -11,6 +11,21 @@ type Milestone = {
   id: string;
   minutes: number;
   name: string;
+};
+
+type Team = {
+  id: string; // This will be temporary for new teams
+  team_name: string;
+  captain_id?: string;
+  captain_name?: string;
+  captain_email?: string;
+};
+
+type User = {
+  id: string;
+  full_name: string;
+  email: string;
+  avatar_url?: string;
 };
 
 export default function CreateEventScreen() {
@@ -27,6 +42,13 @@ export default function CreateEventScreen() {
     { id: '2', minutes: 1000, name: 'Silver' },
     { id: '3', minutes: 1500, name: 'Gold' }
   ]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isAddingTeam, setIsAddingTeam] = useState(false);
+  const [newTeamName, setNewTeamName] = useState('');
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [captainSearchQuery, setCaptainSearchQuery] = useState('');
+  const [captainSearchResults, setCaptainSearchResults] = useState<User[]>([]);
+  const [showCaptainSearch, setShowCaptainSearch] = useState(false);
   
   const isWeb = Platform.OS === 'web';
 
@@ -121,6 +143,85 @@ export default function CreateEventScreen() {
     setMilestones(milestones.filter(milestone => milestone.id !== id));
   };
 
+  const generateTempId = () => `temp-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+  const searchCaptains = async () => {
+    if (!captainSearchQuery.trim()) {
+      Alert.alert('Error', 'Please enter a search term');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .or(`full_name.ilike.%${captainSearchQuery}%,email.ilike.%${captainSearchQuery}%`)
+        .limit(10);
+      
+      if (error) {
+        console.error('Error searching captains:', error);
+        Alert.alert('Error', 'Failed to search users');
+        return;
+      }
+      
+      setCaptainSearchResults(data || []);
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      Alert.alert('Error', 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddTeam = () => {
+    if (!newTeamName.trim()) {
+      Alert.alert('Error', 'Please enter a team name');
+      return;
+    }
+
+    const newTeam: Team = {
+      id: generateTempId(),
+      team_name: newTeamName,
+    };
+
+    setTeams([...teams, newTeam]);
+    setNewTeamName('');
+    setIsAddingTeam(false);
+  };
+
+  const handleUpdateTeamName = (teamId: string, newName: string) => {
+    if (!newName.trim()) {
+      Alert.alert('Error', 'Team name cannot be empty');
+      return;
+    }
+
+    setTeams(teams.map(team => 
+      team.id === teamId ? { ...team, team_name: newName } : team
+    ));
+    setEditingTeamId(null);
+  };
+
+  const handleSetTeamCaptain = (teamId: string, captain: User) => {
+    setTeams(teams.map(team => 
+      team.id === teamId 
+        ? { 
+            ...team, 
+            captain_id: captain.id,
+            captain_name: captain.full_name,
+            captain_email: captain.email
+          } 
+        : team
+    ));
+    setShowCaptainSearch(false);
+    setCaptainSearchQuery('');
+    setCaptainSearchResults([]);
+  };
+
+  const handleRemoveTeam = (teamId: string) => {
+    setTeams(teams.filter(team => team.id !== teamId));
+  };
+
   const validateForm = () => {
     if (!eventName.trim()) {
       Alert.alert('Error', 'Please enter an event name');
@@ -184,13 +285,30 @@ export default function CreateEventScreen() {
 
       if (milestonesError) {
         console.error('Error creating milestones:', milestonesError);
-        // Still continue with navigation, just show warning
         Alert.alert('Warning', 'Event was created but milestones could not be added');
-      } else {
-        // Show success message without navigation dependency
-        Alert.alert('Success', 'Event created successfully');
       }
 
+      // Create the teams
+      if (teams.length > 0) {
+        const teamsData = teams.map(team => ({
+          event_id: eventId,
+          team_name: team.team_name,
+          captain_id: team.captain_id
+        }));
+
+        const { error: teamsError } = await supabase
+          .from('teams')
+          .insert(teamsData);
+
+        if (teamsError) {
+          console.error('Error creating teams:', teamsError);
+          Alert.alert('Warning', 'Event was created but teams could not be added');
+        }
+      }
+
+      // Show success message
+      Alert.alert('Success', 'Event created successfully');
+      
       // Perform direct navigation without depending on Alert's onPress
       console.log('Navigating to admin setup after event creation');
       // Use a small timeout to ensure Alert is visible before navigation
@@ -357,6 +475,179 @@ export default function CreateEventScreen() {
           ))}
         </ThemedView>
 
+        <ThemedView style={styles.formGroup}>
+          <View style={styles.sectionHeader}>
+            <ThemedText style={styles.label}>Teams</ThemedText>
+            {!isAddingTeam && (
+              <TouchableOpacity 
+                style={styles.addButton}
+                onPress={() => setIsAddingTeam(true)}
+              >
+                <ThemedText style={styles.addButtonText}>+ Add Team</ThemedText>
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          {isAddingTeam && (
+            <View style={styles.addTeamForm}>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter team name"
+                value={newTeamName}
+                onChangeText={setNewTeamName}
+              />
+              <View style={styles.teamActionButtons}>
+                <TouchableOpacity 
+                  style={styles.cancelActionButton}
+                  onPress={() => {
+                    setIsAddingTeam(false);
+                    setNewTeamName('');
+                  }}
+                >
+                  <ThemedText>Cancel</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.addActionButton}
+                  onPress={handleAddTeam}
+                >
+                  <ThemedText style={{color: 'white'}}>Add Team</ThemedText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          
+          {teams.length > 0 ? (
+            <View style={styles.teamsList}>
+              {teams.map(team => (
+                <View key={team.id} style={styles.teamItem}>
+                  {editingTeamId === team.id ? (
+                    <View style={styles.editTeamNameContainer}>
+                      <TextInput
+                        style={styles.input}
+                        value={team.team_name}
+                        onChangeText={(text) => {
+                          setTeams(teams.map(t => 
+                            t.id === team.id ? {...t, team_name: text} : t
+                          ));
+                        }}
+                      />
+                      <View style={styles.teamActionButtons}>
+                        <TouchableOpacity 
+                          style={styles.cancelActionButton}
+                          onPress={() => setEditingTeamId(null)}
+                        >
+                          <ThemedText>Cancel</ThemedText>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.addActionButton}
+                          onPress={() => handleUpdateTeamName(team.id, team.team_name)}
+                        >
+                          <ThemedText style={{color: 'white'}}>Save</ThemedText>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.teamNameRow}>
+                      <ThemedText style={styles.teamName}>{team.team_name}</ThemedText>
+                      <TouchableOpacity 
+                        onPress={() => setEditingTeamId(team.id)}
+                        style={styles.editButton}
+                      >
+                        <ThemedText style={styles.editText}>Edit</ThemedText>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  
+                  <View style={styles.teamCaptainSection}>
+                    <ThemedText style={styles.teamSectionTitle}>Captain:</ThemedText>
+                    {team.captain_name ? (
+                      <View style={styles.captainInfo}>
+                        <ThemedText>{team.captain_name}</ThemedText>
+                        <ThemedText style={styles.captainEmail}>{team.captain_email}</ThemedText>
+                        <TouchableOpacity 
+                          onPress={() => {
+                            setShowCaptainSearch(true);
+                            setEditingTeamId(team.id);
+                          }}
+                          style={styles.changeCaptainButton}
+                        >
+                          <ThemedText style={styles.editText}>Change</ThemedText>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity 
+                        onPress={() => {
+                          setShowCaptainSearch(true);
+                          setEditingTeamId(team.id);
+                        }}
+                        style={styles.addCaptainButton}
+                      >
+                        <ThemedText style={styles.editText}>Assign Captain</ThemedText>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  
+                  {showCaptainSearch && editingTeamId === team.id && (
+                    <View style={styles.captainSearchContainer}>
+                      <View style={styles.searchRow}>
+                        <TextInput
+                          style={[styles.input, {flex: 1}]}
+                          placeholder="Search by name or email"
+                          value={captainSearchQuery}
+                          onChangeText={setCaptainSearchQuery}
+                        />
+                        <TouchableOpacity 
+                          style={styles.searchButton}
+                          onPress={searchCaptains}
+                        >
+                          <ThemedText style={{color: 'white'}}>Search</ThemedText>
+                        </TouchableOpacity>
+                      </View>
+                      
+                      {captainSearchResults.length > 0 && (
+                        <FlatList
+                          data={captainSearchResults}
+                          keyExtractor={item => item.id}
+                          renderItem={({ item }) => (
+                            <TouchableOpacity 
+                              style={styles.searchResultItem}
+                              onPress={() => handleSetTeamCaptain(team.id, item)}
+                            >
+                              <ThemedText style={styles.resultName}>{item.full_name}</ThemedText>
+                              <ThemedText style={styles.resultEmail}>{item.email}</ThemedText>
+                            </TouchableOpacity>
+                          )}
+                          style={styles.searchResultsList}
+                        />
+                      )}
+                      
+                      <TouchableOpacity 
+                        style={styles.cancelButton}
+                        onPress={() => {
+                          setShowCaptainSearch(false);
+                          setCaptainSearchQuery('');
+                          setCaptainSearchResults([]);
+                        }}
+                      >
+                        <ThemedText>Cancel Search</ThemedText>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  
+                  <TouchableOpacity 
+                    style={styles.removeTeamButton}
+                    onPress={() => handleRemoveTeam(team.id)}
+                  >
+                    <ThemedText style={styles.removeText}>Remove Team</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <ThemedText style={styles.emptyText}>No teams added. Add a team to get started.</ThemedText>
+          )}
+        </ThemedView>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={styles.cancelButton}
@@ -489,5 +780,126 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: 'white',
     fontSize: 16,
+  },
+  addTeamForm: {
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  teamActionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+  },
+  cancelActionButton: {
+    padding: 8,
+    borderRadius: 4,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  addActionButton: {
+    backgroundColor: '#0a7ea4',
+    padding: 8,
+    borderRadius: 4,
+  },
+  teamsList: {
+    marginTop: 12,
+  },
+  teamItem: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    padding: 12,
+    marginBottom: 12,
+  },
+  teamNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  teamName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  editButton: {
+    padding: 4,
+  },
+  editText: {
+    color: '#0a7ea4',
+  },
+  teamCaptainSection: {
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  teamSectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  captainInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  captainEmail: {
+    color: '#666',
+    marginLeft: 8,
+  },
+  changeCaptainButton: {
+    marginLeft: 8,
+  },
+  addCaptainButton: {
+    padding: 4,
+    alignSelf: 'flex-start',
+  },
+  captainSearchContainer: {
+    marginTop: 8,
+    marginBottom: 12,
+    padding: 12,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 4,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  searchButton: {
+    backgroundColor: '#0a7ea4',
+    padding: 8,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  searchResultsList: {
+    maxHeight: 200,
+    marginBottom: 8,
+  },
+  searchResultItem: {
+    padding: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  resultName: {
+    fontWeight: 'bold',
+  },
+  resultEmail: {
+    color: '#666',
+    fontSize: 12,
+  },
+  editTeamNameContainer: {
+    marginBottom: 12,
+  },
+  removeTeamButton: {
+    padding: 8,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  removeText: {
+    color: 'red',
+  },
+  emptyText: {
+    color: '#666',
+    textAlign: 'center',
   },
 }); 
