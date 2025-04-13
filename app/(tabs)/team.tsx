@@ -58,6 +58,440 @@ type TeamMembershipQueryResult = {
   }
 };
 
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  noTeamContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  noTeamText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  joinEventButton: {
+    backgroundColor: '#C41E3A',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  joinEventButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  headerBackground: {
+    width: '100%',
+    height: 240,
+    resizeMode: 'cover',
+  },
+  gradientOverlay: {
+    flex: 1,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Add light overlay for better text visibility
+  },
+  headerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  headerTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  userIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userIconText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#C41E3A',
+  },
+  pageTitle: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  tagline: {
+    color: '#fff',
+    fontSize: 16,
+    opacity: 0.9,
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 100, // Extra padding to account for tab bar
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  teamInfo: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    position: 'relative',
+    minHeight: 60,
+  },
+  teamIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    zIndex: 2,
+  },
+  teamIconText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  teamDetails: {
+    flex: 1,
+    marginLeft: 76,  // Account for avatar width + margin
+  },
+  teamName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: '#333333',
+  },
+  teamSubtext: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  progressContainer: {
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+    marginBottom: 8,
+  },
+  progressBar: {
+    position: 'absolute',
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginTop: 8,
+  },
+  teamActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 16,
+  },
+  actionButton: {
+    flex: 1,
+    padding: 8,
+    borderRadius: 20,
+    alignItems: 'center',
+    cursor: 'pointer',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    backgroundColor: 'transparent',
+  },
+  actionButtonHovered: {
+    backgroundColor: '#007AFF',
+  },
+  actionButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  actionButtonTextHovered: {
+    color: 'white',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 0,
+    color: '#333333',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statCard: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: '#333333',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  membersHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  searchInput: {
+    backgroundColor: '#F5F5F5',
+    padding: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: '#BDBDBD',
+    width: '50%',
+    maxWidth: 300,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  headerMember: {
+    flex: 3,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#444444',
+  },
+  headerRole: {
+    flex: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#444444',
+    textAlign: 'left',
+  },
+  headerMinutes: {
+    flex: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#444444',
+    textAlign: 'center',
+  },
+  headerContrib: {
+    flex: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#444444',
+    textAlign: 'right',
+  },
+  membersList: {
+    gap: 0,
+  },
+  memberItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+    minHeight: 64,
+    paddingLeft: 64,
+    marginBottom: 4,
+  },
+  memberItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    cursor: 'pointer',
+    marginLeft: 0,
+    borderRadius: 4,
+  },
+  memberItemAlt: {
+    backgroundColor: '#F8F9FA',
+  },
+  memberAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    position: 'absolute',
+    left: 16,
+    top: '50%',
+    transform: [{ translateY: -18 }],
+    zIndex: 3,
+  },
+  memberColumnContent: {
+    flex: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 8,
+  },
+  roleColumnContent: {
+    flex: 2,
+    alignItems: 'flex-start',
+  },
+  minutesColumnContent: {
+    flex: 2,
+    alignItems: 'center',
+  },
+  contribColumnContent: {
+    flex: 2,
+    alignItems: 'flex-end',
+  },
+  memberDetails: {
+    flex: 1,
+    marginLeft: 0,
+    gap: 1,
+  },
+  memberName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  memberRole: {
+    fontSize: 14,
+    color: '#666',
+  },
+  memberLastActive: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  memberMinutes: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  memberContribution: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  memberRank: {
+    fontSize: 12,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  seeAllMembers: {
+    textAlign: 'center',
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 16,
+  },
+  memberItemSearchResult: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#C41E3A',
+  },
+
+  noResultsContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+
+  noResultsText: {
+    fontSize: 16,
+    color: '#666666',
+    fontStyle: 'italic',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 24,
+    width: '80%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: '#333',
+  },
+  goalInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f2f2f2',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontWeight: '600',
+  },
+  saveButton: {
+    backgroundColor: '#007AFF',
+  },
+  saveButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+});
+
 export default function TeamScreen() {
   const router = useRouter();
   const { user } = useAuth();
@@ -492,7 +926,6 @@ export default function TeamScreen() {
     }
   };
 
-  // Optimize memberRowStyles computation to use a stable reference
   const getMemberRowStyle = (memberId: string, index: number, isSearchResult: boolean) => {
     const isHovered = hoveredMemberId === memberId;
     const backgroundColor = isHovered
@@ -531,41 +964,46 @@ export default function TeamScreen() {
 
     setGoalEditModalVisible(false);
 
-    // Validate input
-    const goalValue = parseInt(newGoalValue);
-    if (isNaN(goalValue) || goalValue <= 0) {
-      Alert.alert('Invalid Value', 'Please enter a positive number for the team goal');
-      return;
-    }
+ // Validate input
+const goalValue = parseInt(newGoalValue);
+if (isNaN(goalValue) || goalValue <= 0) {
+  Alert.alert('Invalid Value', 'Please enter a positive number for the team goal');
+  return;
+}
 
-    try {
-      const { error } = await supabase
-        .from('teams')
-        .update({ team_minute_goal: goalValue })
-        .eq('id', userTeam.id);
+// Update team goal in database
+try {
+  const { error } = await supabase
+    .from('teams')
+    .update({ team_minute_goal: goalValue })
+    .eq('id', userTeam.id);
 
-      if (error) {
-        console.error('Error updating team goal:', error);
-        return;
-      }
+  if (error) {
+    console.error('Error updating team goal:', error);
+    Alert.alert('Error', 'Failed to update team goal. Please try again.');
+    return;
+  }
 
-      // Update local state
-      setUserTeam({
-        ...userTeam,
-        team_minute_goal: goalValue
-      });
+  // Update local state
+  setUserTeam({
+    ...userTeam,
+    team_minute_goal: goalValue
+  });
 
-      // Update team stats
-      setTeamStats({
-        ...teamStats,
-        targetMinutes: goalValue
-      });
-    } catch (err) {
-      console.error('Error updating team goal:', err);
-    }
-  };
+  // Update team stats
+  setTeamStats({
+    ...teamStats,
+    targetMinutes: goalValue
+  });
 
-  // Navigate to join event/team page
+  // Show success message
+  Alert.alert('Success', 'Team goal updated successfully');
+} catch (error) {
+  console.error('Error updating team goal:', error);
+  Alert.alert('Error', 'Failed to update team goal. Please try again.');
+}
+};
+
   const navigateToJoinEvent = () => {
     router.push('/join-event');
   };
