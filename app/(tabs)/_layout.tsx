@@ -77,6 +77,7 @@ export default function TabLayout() {
         name="team"
         options={{
           title: 'Team',
+          headerShown: false,
           tabBarIcon: ({ color }) => <IconSymbol name="person.3.fill" color={color} />,
         }}
       />

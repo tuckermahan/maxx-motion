@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, TextInput, Image, Pressable, Platform } from 'react-native';
+import { StyleSheet, View, TextInput, Image, Pressable, Platform, ImageBackground, Text } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -225,6 +226,29 @@ export default function TeamScreen() {
   return (
     <View style={styles.container}>
       <ScrollView>
+        <ImageBackground
+          source={require('@/assets/images/gym-equipment.png')}
+          style={styles.headerBackground}
+          resizeMode="cover"
+        >
+          <LinearGradient
+            colors={['rgba(196, 30, 58, 0.9)', 'rgba(128, 128, 128, 0.85)']}
+            locations={[0, 0.5]}
+            style={styles.gradientOverlay}
+          >
+            <View style={styles.headerTopBar}>
+              <Text style={styles.appTitle}>MAXX Motion</Text>
+              <View style={styles.logoContainer}>
+                <Text style={styles.logoText}>U</Text>
+              </View>
+            </View>
+            <View style={styles.headerContent}>
+              <Text style={styles.headerMainTitle}>Team</Text>
+              <Text style={styles.headerSubtitle}>Track your motion. Reach your potential.</Text>
+            </View>
+          </LinearGradient>
+        </ImageBackground>
+        
         <View style={styles.content}>
           <ThemedView style={styles.card}>
             <View style={styles.teamInfo}>
@@ -273,7 +297,7 @@ export default function TeamScreen() {
                 ]}>INVITE</ThemedText>
               </Pressable>
             </View>
-          </ThemedView>
+      </ThemedView>
 
           <ThemedView style={styles.card}>
             <ThemedText style={[styles.sectionTitle, { marginBottom: 16 }]}>Team Statistics</ThemedText>
@@ -291,7 +315,7 @@ export default function TeamScreen() {
                 <ThemedText style={styles.statLabel}>Weekly Growth</ThemedText>
               </View>
             </View>
-          </ThemedView>
+      </ThemedView>
 
           <ThemedView style={styles.card}>
             <View style={styles.membersHeader}>
@@ -354,7 +378,7 @@ export default function TeamScreen() {
                 {showAllMembers ? 'SHOW LESS' : 'SEE ALL MEMBERS (12)'}
               </ThemedText>
             </Pressable>
-          </ThemedView>
+      </ThemedView>
         </View>
       </ScrollView>
     </View>
@@ -365,6 +389,60 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  headerBackground: {
+    width: '100%',
+    height: 240,
+    resizeMode: 'cover',
+  },
+  gradientOverlay: {
+    flex: 1,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Add light overlay for better text visibility
+  },
+  headerContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingBottom: 20,
+    alignItems: 'center',
+  },
+  headerTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  appTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  logoContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#DC143C',
+  },
+  headerMainTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: 'white',
+    marginTop: 40,
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: 'white',
+    opacity: 0.9,
+    textAlign: 'center',
   },
   content: {
     padding: 16,
