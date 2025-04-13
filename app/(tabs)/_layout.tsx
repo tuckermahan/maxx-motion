@@ -49,47 +49,53 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: colorScheme === 'dark' ? '#ffffff' : '#0a7ea4',
         tabBarInactiveTintColor: colorScheme === 'dark' ? '#888888' : '#888888',
+        tabBarShowLabel: true,
+        tabBarStyle: {
+          borderTopWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        tabBarItemStyle: {
+          borderTopWidth: 0,
+        },
+        tabBarActiveBackgroundColor: 'transparent',
+        tabBarInactiveBackgroundColor: 'transparent',
+        tabBarIcon: () => null,
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="home" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="activity"
         options={{
           title: 'Activity',
-          tabBarIcon: ({ color }) => <IconSymbol name="figure.walk" color={color} />,
         }}
       />
       <Tabs.Screen
         name="team"
         options={{
           title: 'Team',
-          tabBarIcon: ({ color }) => <IconSymbol name="person.3.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="leaderboard"
         options={{
           title: 'Leaderboard',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="trophy" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="achievements"
         options={{
           title: 'Achievements',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="medal" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol name="person.fill" color={color} />,
         }}
       />
     </Tabs>
